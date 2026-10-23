@@ -1,63 +1,46 @@
-# 実装方針・ファイル構成
+# 実装方針（既存プロジェクト準拠）
 
-## 技術選定
+当日は素のJavaScript、Vite、Canvas 2Dを使う。React・Phaserは追加しない。既存実装のファイル責務を保ったまま機能を増やす。
 
-- **Vite + Vanilla JavaScript**：画面は軽量なSPAとして作る。Reactなどは導入しない。
-- **Canvas 2D**：迷路とマスの描画。DOMはホーム、説明、ボタンに使う。
-- **Supabase JS**：Google OAuth、セッション、ログインユーザーのセーブデータ。
-- **Zod**：ステージJSONを読み込む時の形式検証。壊れたステージをゲームへ渡さない。
-
-## 目標の構成
+## 実際の構成
 
 ```text
 src/
-  main.js                 # アプリの起動、画面遷移の接続
-  auth/                   # Supabaseと認証状態（白石）
-  save/                   # ローカル・クラウド保存（白石）
-  game/
-    InputHandler.js        # 入力→アクション変換（末田）
-    GameState.js           # ルールと状態更新（末田）
-    StageLoader.js         # JSON読込とZod検証（白鳥・末田）
-    GameScene.js           # Canvas描画とゲーム進行（末田）
-    tiles/                 # マスごとの描画・効果（末田）
-  ui/
-    HomeView.js            # ホーム画面（須賀）
-    GameView.js            # Canvasの配置・HUD（須賀・末田）
-  styles/                  # home.css / game.css / common.css
-stages/                    # 完成したプレイ用JSON
+  main.js                    # Canvas生成・ゲームループ起動・ホーム接続
+  core/GameLoop.js            # requestAnimationFrame と update/render
+  core/InputHandler.js        # キー入力をactionへ変換
+  core/StageManager.js        # ステージ番号の進行管理
+  scenes/MainGameScene.js     # ゲーム状態、ギミック、Canvas描画
+  scenes/BossQuizScene.js     # 全ステージ後のキー入力クイズ
+  data/stages.js              # import.meta.glob でJSONを収集・検証・順序化
+  data/stages/*.json          # ステージデータ
+  ui/canvas-ui.js             # Canvas共通描画ヘルパー
+packages/stage-schema/        # constants/validate をゲーム・エディタ・CLIで共有
+editor/                       # 独立Viteのステージエディタ
 ```
 
-担当フォルダで作ったコードは、統合時にこの構成へ移動する。統合責任者以外は `src/main.js` と共通CSSの変更を避ける。
+## 必ず守る依存方向
 
-## 画面遷移
-
-1. `main.js` が認証状態を復元する。
-2. `HomeView` がログインまたはゲスト選択を表示する。
-3. 「ゲーム開始」で選択済みユーザーとステージIDを `GameScene.start()` に渡す。
-4. クリア時に進行状況を `saveProgress(user, progress)` に渡す。
-5. ホームへ戻ったらゲームのイベントリスナーとループを破棄する。
-
-## 最小API
-
-```js
-// game/GameScene.js
-start({ canvas, stage, user })
-dispose()
-
-// game/StageLoader.js
-loadStage(stageJson) // Zod検証済みステージを返す
-
-// save/saveRepository.js
-loadSave(user)
-saveProgress(user, progress)
+```text
+main → MainGameScene → InputHandler / StageManager / canvas-ui / stages
+stages → stage-schema
+editor → stage-schema
 ```
 
-## 開発コマンド
+ゲーム本体とエディタは、同じ `packages/stage-schema` だけを共有する。エディタのコードをゲームへimportしない。ステージ追加時に `stages.js` を編集しない。`import.meta.glob('./stages/*.json')` が自動で読込・検証・`number`順ソートする。
 
-```bash
-npm run dev
-npm run build
-npm run test
-```
+## 実装手順
 
-初回のみ `cp .env.example .env.local` を実行し、白石がSupabase値を設定する。`.env.local` は共有・コミットしない。
+1. 既存 `src/`、`packages/`、`editor/` を当日リポジトリに同じ構成で移す。
+2. `package.json` に `@shortcut-dungeon/stage-schema: file:packages/stage-schema` を依存として登録する。
+3. ゲームは `npm run dev`、エディタは `cd editor; npm run dev`。
+4. 変更ごとに `npm run validate:stages`、`npm test`、`npm run build` を実行する。
+5. シーンを終了する時は `dispose()` でInputHandler、Canvas click、ボスクイズを必ず解除する。
+
+## 追加機能の置き場所
+
+- 新しいキー操作: `core/InputHandler.js`
+- 新しいステージフィールドと検証: `packages/stage-schema/`
+- 新しいギミックの状態・判定・描画: `scenes/MainGameScene.js`（大きくなったら専用モジュールへ抽出）
+- 新しい編集UI: `editor/src/`
+- ホームとログイン: `src/ui/home-ui.js` と `src/auth/`

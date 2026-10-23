@@ -1,52 +1,22 @@
-# 須賀：ホーム画面・統合の実装指示
+# 須賀：ホーム画面・統合
 
-## 目的
+既存の `src/main.js` と `src/ui/home-ui.js` には、ホームで選択後にゲームを開始する実装がある。これを正として引き継ぎ、置き換えない。
 
-プレイ方法の選択、ゲーム開始、ホームへの復帰を担当する。全体の起動ファイルを管理するが、ゲームルール・Supabase通信・エディタ内部は実装しない。
+## 現在の実装構造
 
-## 作成するファイル
+- `index.html` は `#home-screen` と、最初は `hidden` の `#game-screen` を持つ。
+- `src/ui/home-ui.js` の `setupHome({ onStart })` は、ゲスト選択時に開始ボタンを有効化し、開始クリックで `onStart()` を呼ぶ。
+- `src/main.js` の `startGame()` が、Canvas、`MainGameScene`、`GameLoop` を初期化する。
+- `visibilitychange` はGameLoopが存在する時だけ停止／再開し、`pagehide` で `gameLoop.stop()` と `scene.dispose()` を呼ぶ。
 
-```text
-src/ui/HomeView.js           # ホーム画面DOMを生成しイベントを登録
-src/ui/GameView.js           # Canvas、HUD、戻るボタンのDOMを生成
-src/styles/common.css        # リセット、色変数、共通レイアウト
-src/styles/home.css          # ホーム画面だけの見た目
-src/main.js                  # 認証、ホーム、ゲームの接続
-```
+## AIへの実装指示
 
-## `HomeView` の責務
-
-- タイトル、「Googleでログイン」「ゲストでプレイ」「ゲームを開始する」を表示する。
-- 起動時は `auth.getCurrentUser()` を呼び、ログイン済みなら開始可能にする。
-- Googleボタンは `auth.signInWithGoogle()`、ゲストボタンは `auth.signInAsGuest()` を呼ぶだけにする。
-- 開始ボタンはユーザーが選択済みの時だけ有効にする。
-- エラーや準備中のメッセージを表示できる領域を持つ。
-
-## `main.js` の接続例
-
-```js
-const user = await getCurrentUser();
-renderHome({ user, onStart: async () => {
-  const stage = await loadStage(defaultStageJson);
-  const { canvas } = renderGameView({ onBack });
-  scene.start({ canvas, stage, user, onClear: handleClear });
-}});
-```
-
-- 画面切替時は `#app` の中身を置き換える前に、前の `HomeView` / `GameScene` の `dispose()` を呼ぶ。
-- ゲームクリア時は `saveProgress(user, progress)` を呼び、失敗してもクリア表示は維持する。
-- 共通HTMLは `index.html` の `#app` のみを使い、画面ごとにHTMLファイルを増やさない。
-
-## 統合手順
-
-1. ゲスト選択→ゲーム開始→移動→ゴール→ホームへ戻る、を先に通す。
-2. ステージJSONを白鳥の成果物へ置き換える。
-3. ゲスト保存を接続する。
-4. 最後にGoogleログイン・クラウド保存を接続する。
+1. ホームのDOM操作は `src/ui/home-ui.js` に閉じ込める。MainGameSceneへDOMコードを追加しない。
+2. Googleボタンは白石の `signInWithGoogle()` を呼ぶだけにし、Supabase未設定中は「準備中」で無効化する。
+3. ゲストボタンは `signInAsGuest()` を呼び、成功した時だけ開始ボタンを有効にする。
+4. `startGame()` は二重実行を防ぐ。すでにsceneがある場合は新しいGameLoopを作らない。
+5. 認証状態の表示、ログアウト、セーブ済みステージの表示はホームに追加してよいが、保存処理は白石の公開APIを呼ぶだけにする。
 
 ## 完了条件
 
-- 初回アクセスでホームが表示される。
-- ゲスト選択後だけ開始できる。
-- Google認証の失敗・未設定時に分かる案内が出る。
-- 戻る→再開→戻るを繰り返してもゲーム入力が二重登録されない。
+初回アクセスでホームが表示され、ゲスト選択→開始→既存ゲーム操作まで動く。Google認証が失敗または未設定でもゲストプレイを選べる。画面終了後にゲームの入力イベントが残らない。

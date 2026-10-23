@@ -1,37 +1,57 @@
-# ステージJSON形式（実装契約）
+# ステージJSON仕様（既存実装準拠）
 
-ステージはJSONファイルとして `stage-editor/stages/` に保存し、統合時に `stages/` へコピーする。編集側とプレイ側はこの形式だけを使用する。
+AIがステージやローダーを実装する時の唯一の正規仕様です。参考元は既存プロジェクトの `packages/stage-schema/` と `src/data/stages/*.json`。独自の `tiles` 配列形式には変えません。
+
+## グリッド
+
+- Canvasは **24列 × 16行**、1タイル **40px**。
+- 座標は左上が `(0, 0)`。外周は固定壁。配置可能範囲は `x: 1〜22`、`y: 1〜14` の整数。
+- `schemaVersion` は必ず `1`。
+
+## 完全な例
 
 ```json
 {
+  "schemaVersion": 1,
   "id": "copy-gate-intro",
-  "name": "コピーで扉を開こう",
-  "width": 8,
-  "height": 6,
-  "tiles": [
-    { "x": 0, "y": 0, "type": "wall" },
-    { "x": 1, "y": 1, "type": "start" },
-    { "x": 2, "y": 1, "type": "copy-source", "group": "blue" },
-    { "x": 4, "y": 1, "type": "paste-target", "group": "blue" },
-    { "x": 5, "y": 1, "type": "gate", "group": "blue" },
-    { "x": 6, "y": 1, "type": "goal" }
-  ]
+  "number": 1,
+  "name": "コピーゲート入門",
+  "start": { "x": 2, "y": 13, "facing": "right" },
+  "obstacles": [{ "x": 5, "y": 5, "width": 1, "height": 4 }],
+  "items": [{ "type": "skillPotion", "x": 3, "y": 12 }],
+  "blocks": [{ "id": "intro-crate", "name": "木箱", "kind": "normal", "x": 3, "y": 13, "color": "#b57d50" }],
+  "colorSwitches": [], "colorWalls": [], "lasers": [], "magma": [],
+  "goal": { "x": 21, "y": 2 }, "goalBlock": null,
+  "shortcutGate": { "x": 12, "y": 2 },
+  "hint": "スタート横の箱に向いてCtrl+C。ゲートが開きます"
 }
 ```
 
-## フィールド
+## 必須フィールド
 
-| フィールド | 型 | 必須 | 制約 |
-|---|---|---:|---|
-| `id` | string | はい | 英小文字・数字・ハイフン。重複不可 |
-| `name` | string | はい | 表示名、1〜40文字 |
-| `width` / `height` | integer | はい | 3〜30 |
-| `tiles` | array | はい | 座標重複不可 |
-| `tiles[].x` / `y` | integer | はい | `0 <= x < width`、`0 <= y < height` |
-| `tiles[].type` | string | はい | GIMMICKS.mdの列挙値のみ |
-| `tiles[].group` | string | 条件付き | copy/paste/gate/switchでは必須 |
+| フィールド | 型・制約 | ゲームでの意味 |
+|---|---|---|
+| `id` | 英小文字・数字・ハイフン、3〜64文字 | ファイル名と同じ識別子 |
+| `number` | 1以上の整数、全ステージで一意 | プレイ順 |
+| `name` | 1〜40文字 | HUD表示名 |
+| `start` | `{x,y,facing}`、facingは上下左右 | 開始位置と初期の向き |
+| `obstacles` | `{x,y,width,height}` の配列 | 固定壁 |
+| `items` | `skillPotion`/`lifePotion` の配列 | 接触取得ポーション |
+| `blocks` | `id,name,kind,x,y,color` の配列 | コピー・切り取り・貼り付け対象 |
+| `colorSwitches` | `{x,y,color}` の配列 | 色つき木箱を置く台 |
+| `colorWalls` | `{x,y,width,height,color}` の配列 | 色連動の通行不能壁 |
+| `lasers` | `{x,y,direction,length}` の配列 | 発射装置 |
+| `magma` | `{x,y}` の配列 | 危険マス |
+| `goal` | `{x,y}` | プレイヤーのゴール |
+| `goalBlock` | `{x,y}` または `null` | 木箱配置が必要なゴール条件 |
+| `shortcutGate` | `{x,y}` または `null` | コピー成功後に開く壁 |
+| `hint` | 文字列（70文字以下推奨） | 下部ヒント |
 
-- `floor` は省略可能。指定されない座標はすべて床。
-- `start` は正確に1つ、`goal` は1つ以上必要。
-- `group` は `^[a-z][a-z0-9-]{0,19}$` に従う。
-- 新しいマスを追加する時は、白鳥が窓口となり、末田と読込確認を行う。
+`initialSkillPotions` は任意の0以上の整数。`kind` は `normal` または `colored`、色は必ず `#rrggbb`。
+
+## 検証ルール
+
+- 未知のフィールド、必須フィールド欠落、範囲外、重複座標はエラー。
+- start/goal/壁/アイテム/木箱/スイッチ/色壁/レーザー/マグマ/ゲート/goalBlockは重ねない。
+- レーザーのdirectionは `up/down/left/right`、lengthは1〜21で範囲外へ出ない。
+- JSONは64KB以下。作成後は必ず `npm run validate:stages`。

@@ -1,37 +1,30 @@
-# 認証・保存の共通契約（実装契約）
+# 認証・保存の共通契約
 
-画面やゲーム機能はSupabaseを直接操作せず、以下のモジュールだけをimportする。
+既存ゲームに認証はまだ無い。白石が以下のモジュールを追加し、他担当はSupabase SDKを直接importせず、この関数だけを使う。
 
 ```js
 // src/auth/auth.js
-getCurrentUser()       // Promise<User | null>
-signInWithGoogle()     // Promise<void>
+getCurrentUser()       // Promise<null | GuestUser | SignedInUser>
 signInAsGuest()        // Promise<GuestUser>
+signInWithGoogle()     // Promise<void>。OAuthリダイレクトを開始
 signOut()              // Promise<void>
 
-// src/save/save-repository.js
+// src/data/save/save-repository.js
 loadSave(user)         // Promise<Progress>
 saveProgress(user, progress) // Promise<Progress>
 ```
 
-## 型の形
-
 ```js
-// User
+// GuestUser / SignedInUser
 { type: 'guest', id: 'guest' }
 { type: 'user', id: 'uuid', email: 'user@example.com', displayName: '名前' }
 
 // Progress
-{
-  completedStageIds: ['move-intro'],
-  currentStageId: 'copy-gate-intro',
-  updatedAt: '2026-10-24T10:00:00.000Z'
-}
+{ completedStageIds: ['crate-intro'], currentStageId: 'copy-gate-maze', updatedAt: 'ISO-8601文字列' }
 ```
 
-## 呼び出し側のルール
-
-- `null` の時はゲームを開始しないでホームに選択案内を出す。
-- ゲストとログインユーザーの分岐は保存モジュール内で行う。ゲーム側に `if (user.type)` を増やさない。
-- `loadSave()` に保存がない場合は空のProgressを返す。`null` は返さない。
-- ネットワークエラーは握り潰さずthrowする。ただしホーム／ゲームUIはエラーを表示し、プレイ自体は続行可能にする。
+- `getCurrentUser()` がnullならゲームを開始しない。
+- ゲストはlocalStorageキー `shortcut-dungeon:guest-save:v1` を使う。
+- ログインユーザーはSupabase `saves` テーブルへ `user_id` をキーとしてupsertする。
+- 保存なしの場合、`loadSave()` は空のProgressを返す。nullを返さない。
+- ネットワーク失敗はErrorとして呼び出し元へ伝えるが、UIはゲストプレイを継続可能にする。
