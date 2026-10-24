@@ -7,15 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test",
-    "deploy:pages": "npm run build && wrangler pages deploy dist"
+    "test": "node --test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.65.0",
     "vite": "^7.1.7",
     "wrangler": "^4.45.0"
   }

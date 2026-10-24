@@ -35,7 +35,7 @@ AIへ作業を依頼する時は、まずリポジトリ直下の [AGENTS.md](AG
 | 項目 | 値 |
 |---|---|
 | Framework preset | Vite |
-| Build command | `npm run build` |
+| Build command | `npm ci && npm run build` |
 | Build output directory | `dist` |
 | Node version | `.nvmrc` の `22` |
 
@@ -54,11 +54,11 @@ AIへ作業を依頼する時は、まずリポジトリ直下の [AGENTS.md](AG
 
 `public/_headers` でキャッシュとセキュリティヘッダーを設定している。Vite が `dist/` 直下へコピーする。
 
-Cloudflare Pages の Git 連携では、上記の Build command と Output directory を使います。CLI で手動公開する場合も Pages コマンドを使ってください。Workers 用の `wrangler deploy` は使いません。
+`wrangler.jsonc` で Pages の出力先を `dist` に指定しています。Cloudflare Pages の Git 連携では上記の設定を使ってください。CLI で手動公開する場合はプロジェクト名を指定します。
 
 ```bash
-npm install
+npm ci
 npm run build
-npx wrangler pages deploy dist
+npx wrangler pages deploy dist --project-name shortcut-dungeon-jphack-2026
 ```
 
