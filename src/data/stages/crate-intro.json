@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "crate-intro",
+  "number": 1,
+  "name": "切り取りと配置",
+  "start": {
+    "x": 2,
+    "y": 7,
+    "facing": "right"
+  },
+  "obstacles": [
+    {
+      "x": 8,
+      "y": 1,
+      "width": 1,
+      "height": 6
+    },
+    {
+      "x": 8,
+      "y": 8,
+      "width": 1,
+      "height": 7
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "width": 1,
+      "height": 3
+    },
+    {
+      "x": 11,
+      "y": 3,
+      "width": 1,
+      "height": 3
+    },
+    {
+      "x": 13,
+      "y": 10,
+      "width": 5,
+      "height": 1
+    }
+  ],
+  "items": [
+    {
+      "type": "skillPotion",
+      "x": 3,
+      "y": 5
+    }
+  ],
+  "blocks": [
+    {
+      "id": "stage-1-crate",
+      "name": "木箱",
+      "kind": "normal",
+      "x": 3,
+      "y": 7,
+      "color": "#b57d50"
+    }
+  ],
+  "colorSwitches": [],
+  "colorWalls": [],
+  "lasers": [],
+  "water": [],
+  "goal": {
+    "x": 21,
+    "y": 7
+  },
+  "shortcutGate": null,
+  "hint": "木箱をCtrl+Xで切り取り、指定マスの前からCtrl+Vで配置"
+}

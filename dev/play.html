@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071017">
+    <title>ショートカット・ダンジョン | ゲーム確認</title>
+    <style>
+      :root { color-scheme: dark; font-family: "Yu Gothic UI", system-ui, sans-serif; background: #071017; color: #eff7f5; }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; }
+      main { width: min(100%, 1040px); }
+      h1 { margin: 0 0 8px; font-size: clamp(1.2rem, 3vw, 1.7rem); }
+      p { margin: 0 0 16px; color: #a7b9b8; line-height: 1.6; }
+      canvas { display: block; width: 100%; height: auto; border: 1px solid rgba(157, 212, 208, .2); border-radius: 12px; outline: none; background: #091118; }
+      canvas:focus-visible { border-color: #70e1c1; box-shadow: 0 0 0 3px rgba(112, 225, 193, .2); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ショートカット・ダンジョン</h1>
+      <p>キャンバスをクリックして操作します。移動は矢印キー / WASD、木箱の操作は Ctrl / Cmd + C・X・V・Z・Y です。</p>
+      <canvas id="game-canvas" width="960" height="640" tabindex="0" aria-label="ショートカット・ダンジョンのゲーム画面"></canvas>
+    </main>
+    <script type="module">
+      import GameLoop from '../src/core/GameLoop.js';
+      import MainGameScene from '../src/scenes/MainGameScene.js';
+
+      const canvas = document.querySelector('#game-canvas');
+      const scene = new MainGameScene(canvas);
+      const loop = new GameLoop({
+        update: (deltaTime) => scene.update(deltaTime),
+        render: () => scene.render(),
+      });
+
+      canvas.focus({ preventScroll: true });
+      scene.render();
+      loop.start();
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) loop.stop();
+        else loop.start();
+      });
+      window.addEventListener('pagehide', () => {
+        loop.stop();
+        scene.dispose();
+      }, { once: true });
+    </script>
+  </body>
+</html>
