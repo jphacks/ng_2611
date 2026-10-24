@@ -1,13 +1,228 @@
 <!doctype html>
 <html lang="ja">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#071017">
-    <title>ショートカット・ダンジョン</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#04080f" />
+    <meta
+      name="description"
+      content="キーボードショートカットでダンジョンを攻略する2Dパズルゲーム。"
+    />
+    <title>SHORTCUT://DUNGEON</title>
+    <link rel="stylesheet" href="/styles/main.css" />
+    <script type="module" src="/src/main.js"></script>
   </head>
   <body>
-    <main id="app"></main>
-    <script type="module" src="/src/main.js"></script>
+    <div class="world" aria-hidden="true">
+      <div class="world-grid"></div>
+      <div class="world-glow"></div>
+      <div class="world-scan"></div>
+    </div>
+
+    <main id="home-screen" class="home-shell">
+      <section class="terminal" aria-labelledby="home-title">
+        <header class="terminal-bar">
+          <div class="terminal-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <p class="terminal-path">
+            operator@shortcut-dungeon:<span>~</span>
+          </p>
+          <div class="terminal-bar-right">
+            <span class="chip chip-live">SECURE SHELL</span>
+            <span id="user-badge" class="chip chip-user" data-tone="none">NO SESSION</span>
+          </div>
+        </header>
+
+        <div class="terminal-body">
+          <div class="terminal-main">
+            <p class="eyebrow">
+              <span class="eyebrow-dot" aria-hidden="true"></span>
+              [ SYSTEM READY ] KEYBOARD TRAINING v2.6
+            </p>
+
+            <h1 id="home-title" class="wordmark" aria-label="ショートカット・ダンジョン">
+              <span class="wordmark-main" aria-hidden="true">SHORTCUT</span>
+              <span class="wordmark-sep" aria-hidden="true">://</span>
+              <span class="wordmark-sub" aria-hidden="true">DUNGEON</span>
+            </h1>
+
+            <p class="home-kicker">コピー・貼り付け・切り取りで、迷宮を書き換えろ。</p>
+            <p class="home-lead">
+              ショートカットは武器になる。キー入力ひとつで木箱を動かし、ゲートを開き、
+              レーザーをかわす。遊びながらPC操作が身につく2Dダンジョン。
+            </p>
+
+            <p class="prompt-line" aria-hidden="true">
+              <span class="prompt-mark">guest@localhost</span>:<span class="prompt-path">~/start</span>$
+              <span class="prompt-cmd">select session</span><span class="caret"></span>
+            </p>
+
+            <div class="login-options" aria-label="プレイ方法を選択">
+              <button
+                id="google-login-button"
+                class="choice choice-google"
+                type="button"
+                disabled
+                aria-describedby="google-note"
+              >
+                <span class="choice-icon" aria-hidden="true">G</span>
+                <span class="choice-text">
+                  <strong>Google でログイン</strong>
+                  <small>進捗をクラウドに保存 / 別端末でも続きから</small>
+                </span>
+                <span class="choice-state" data-tone="none">OFFLINE</span>
+              </button>
+              <p id="google-note" class="option-note">
+                Supabase が未設定のため、現在 Google ログインは利用できません。
+              </p>
+
+              <button
+                id="guest-play-button"
+                class="choice choice-guest"
+                type="button"
+                aria-pressed="false"
+              >
+                <span class="choice-icon" aria-hidden="true">&gt;_</span>
+                <span class="choice-text">
+                  <strong>ゲストでプレイ</strong>
+                  <small>登録不要 / 進捗はこのブラウザに保存</small>
+                </span>
+                <span class="choice-state" data-tone="none">STANDBY</span>
+              </button>
+              <p class="option-note">いつでも開始できます。あとから Google 連携も可能です。</p>
+            </div>
+
+            <div class="actions">
+              <button id="start-game-button" class="start-button" type="button" disabled>
+                <span class="start-label">GAME START</span>
+                <span class="start-arrow" aria-hidden="true">▸</span>
+              </button>
+              <button id="resume-game-button" class="resume-button" type="button" hidden>
+                RESUME
+              </button>
+              <button id="sign-out-button" class="ghost-button" type="button" hidden>
+                LOG OUT
+              </button>
+              <button id="help-button" class="ghost-button" type="button">HELP</button>
+            </div>
+
+            <p id="selection-status" class="selection-status" aria-live="polite">
+              セッションを選択してください。
+            </p>
+            <p id="home-message" class="home-message" role="status"></p>
+
+            <ul class="feature-strip">
+              <li><span>STAGES</span>05</li>
+              <li><span>MODE</span>KEYBOARD</li>
+              <li><span>SAVE</span>AUTO</li>
+              <li><span>BUILD</span>LOCAL</li>
+            </ul>
+          </div>
+
+          <aside class="terminal-side" aria-label="システム情報">
+            <section class="panel">
+              <h2>PROGRESS</h2>
+              <p id="progress-summary" class="progress-summary">CLEARED 0 / 5</p>
+              <ul id="stage-progress" class="stage-list"></ul>
+              <p id="boss-badge" class="boss-badge" hidden>BOSS CLEAR</p>
+            </section>
+
+            <section class="panel">
+              <h2>KEYMAP</h2>
+              <ul class="keymap">
+                <li><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd><span>MOVE</span></li>
+                <li><kbd>Ctrl</kbd><kbd>C</kbd><span>COPY</span></li>
+                <li><kbd>Ctrl</kbd><kbd>V</kbd><span>PASTE</span></li>
+                <li><kbd>Ctrl</kbd><kbd>X</kbd><span>CUT</span></li>
+                <li><kbd>Ctrl</kbd><kbd>Z</kbd><span>UNDO</span></li>
+                <li><kbd>R</kbd><kbd>Enter</kbd><span>RETRY</span></li>
+              </ul>
+            </section>
+
+            <section class="panel panel-feed">
+              <h2>SYSLOG</h2>
+              <ul class="sys-log" aria-hidden="true">
+                <li>keyboard driver ready</li>
+                <li>clipboard buffer empty</li>
+                <li>stage grid 24 x 16 loaded</li>
+                <li>awaiting operator input</li>
+              </ul>
+            </section>
+          </aside>
+        </div>
+
+        <footer class="terminal-foot">
+          <span>SHORTCUT DUNGEON / 2026</span>
+          <span>BUILD 0.1.0 · LOCAL</span>
+        </footer>
+      </section>
+
+      <div id="auth-loading" class="boot-overlay" role="status" aria-live="polite">
+        <p class="boot-line">BOOT SEQUENCE</p>
+        <p class="boot-text">セッションを確認しています…</p>
+        <div class="boot-bar" aria-hidden="true"><span></span></div>
+      </div>
+    </main>
+
+    <main id="game-screen" class="game-shell" hidden>
+      <section class="game-terminal" aria-label="ゲーム画面">
+        <header class="game-bar">
+          <button id="back-home-button" class="bar-button" type="button">
+            <span aria-hidden="true">◂</span> HOME
+          </button>
+          <p class="game-path">
+            stage://<span id="game-stage-label">running</span>
+          </p>
+          <div class="game-bar-right">
+            <span id="game-user-badge" class="chip chip-user" data-tone="none">NO SESSION</span>
+            <span id="save-status" class="save-status" aria-live="polite">SAVED --:--</span>
+            <button id="game-help-button" class="bar-button bar-button-icon" type="button">
+              <span aria-hidden="true">?</span>
+              <span class="visually-hidden">操作ガイドを開く</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="canvas-frame">
+          <canvas
+            id="game-canvas"
+            width="960"
+            height="640"
+            tabindex="0"
+            aria-label="矢印キーまたはWASDでプレイヤーを移動してダンジョンを攻略するゲーム"
+          ></canvas>
+        </div>
+
+        <footer class="game-foot">
+          <span class="footer-item"><kbd>↑↓←→ / WASD</kbd>移動</span>
+          <span class="footer-item"><kbd>Ctrl + C / V / X / Z</kbd>ショートカット</span>
+          <span class="footer-item"><kbd>Enter / R</kbd>リトライ</span>
+        </footer>
+      </section>
+    </main>
+
+    <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
+      <header class="help-bar">
+        <h2 id="help-title">操作ガイド / MANUAL</h2>
+        <button id="help-close-button" class="bar-button" type="button">CLOSE</button>
+      </header>
+      <div class="help-body">
+        <p>
+          このダンジョンでは、実際のPCショートカットがそのまま魔法になります。
+          向いている方向の1マスに対して操作が働きます。
+        </p>
+        <dl class="help-list">
+          <div><dt>Ctrl + C</dt><dd>目の前の木箱をコピーする。コピー元は消えない。</dd></div>
+          <div><dt>Ctrl + V</dt><dd>コピーした木箱を目の前に貼り付ける。エナジーを1消費。</dd></div>
+          <div><dt>Ctrl + X</dt><dd>目の前の木箱を切り取る。貼り付けるまで手元に保持。</dd></div>
+          <div><dt>Ctrl + Z</dt><dd>直前の操作を取り消す。</dd></div>
+          <div><dt>R / Enter</dt><dd>ゲームオーバー時に現在のステージをやり直す。</dd></div>
+        </dl>
+        <p class="help-note">
+          進捗はステージクリア時に自動保存されます。Ctrl + S を押す必要はありません。
+        </p>
+      </div>
+    </dialog>
   </body>
 </html>
