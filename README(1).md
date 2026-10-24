@@ -54,8 +54,10 @@ AIへ作業を依頼する時は、まずリポジトリ直下の [AGENTS.md](AG
 
 `public/_headers` でキャッシュとセキュリティヘッダーを設定している。Vite が `dist/` 直下へコピーする。
 
+`wrangler.toml` points Wrangler at the static `dist/` output. Deploy with:
+
 ```bash
-npm run build
-npx wrangler pages deploy dist
+npm install
+npm run deploy:pages
 ```
 
