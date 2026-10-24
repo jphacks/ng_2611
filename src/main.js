@@ -86,9 +86,10 @@ let pendingProgress = null;
 let playModeUi = null;
 
 const roomLobbyUi = setupRoomLobbyUi({
-  onClose: () => {
+  onClose: ({ roomDeleted = false } = {}) => {
     activeRoomCode = null;
     playModeUi.show(currentUser);
+    if (roomDeleted) playModeUi.setMessage('ホストがルームを終了しました。', 'info');
   },
   onStart: ({ roomCode, stageId }) => {
     startGame({ roomCode, stageId });
