@@ -88,7 +88,7 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
       const currentStage = member.current_stage_id
         ? stageNames.get(member.current_stage_id) || member.current_stage_id
         : '未開始';
-      details.textContent = `${currentStage} ・ クリア ${member.completed_stage_ids?.length ?? 0}`;
+      details.textContent = `${member.is_playing ? 'プレイ中' : '待機中'} ・ ${currentStage} ・ クリア ${member.completed_stage_ids?.length ?? 0}`;
       item.append(name, details);
 
       const tags = [];
@@ -111,6 +111,9 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     label.className = 'room-lobby-current-stage';
     label.textContent = `選択中のステージ：${selectedStage?.title || room.stage_id || '未選択'}`;
     stageArea.append(label);
+    const activePlayers = (room.members ?? []).filter((member) => (
+      member.user_id !== room.host_user_id && !member.left_at && !member.kicked_at
+    ));
 
     const startKey = room.started_at ? `${room.id}:${room.started_at}` : null;
     if (startKey && room.stage_id && handledStartAt !== startKey) {
@@ -177,7 +180,7 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     startButton.type = 'button';
     startButton.className = 'room-lobby-start';
     startButton.textContent = room.started_at ? 'ステージ開始済み' : '選択したステージを開始';
-    startButton.disabled = !room.stage_id || Boolean(room.started_at);
+    startButton.disabled = !room.stage_id || Boolean(room.started_at) || activePlayers.length === 0;
     startButton.addEventListener('click', async () => {
       if (!room.stage_id || room.started_at) return;
       startButton.disabled = true;
@@ -195,7 +198,7 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     stageArea.append(startButton);
     startStatus.textContent = room.started_at
       ? '開始を参加者へ通知しました。ホストは待機画面に残ります。'
-      : '';
+      : activePlayers.length === 0 ? '開始できる参加者がルームにいません。' : '';
     startStatus.dataset.tone = room.started_at ? 'success' : '';
   }
 

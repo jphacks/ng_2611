@@ -19,6 +19,8 @@ const ERROR_MESSAGES = {
   ACTIVE_MEMBER_NOT_FOUND: '対象の参加者が見つかりません。',
   KICKED_MEMBER_NOT_FOUND: '解除するキック済みメンバーが見つかりません。',
   STAGE_ID_REQUIRED: 'ステージを指定してください。',
+  NO_ACTIVE_PLAYERS: '開始できる参加者がルームにいません。',
+  PLAYING_STATE_REQUIRED: 'プレイ状態を指定してください。',
   ROOM_ALREADY_STARTED: 'このルームのステージはすでに開始されています。',
   ROOM_CREATOR_REQUIRED: 'ルームを削除できるのは作成者だけです。',
 };
@@ -116,7 +118,7 @@ export async function getRoom(roomCode) {
 
   const { data: members, error: membersError } = await client
     .from('room_members')
-    .select('user_id, display_name, current_stage_id, completed_stage_ids, joined_at, left_at, kicked_at')
+    .select('user_id, display_name, current_stage_id, completed_stage_ids, is_playing, joined_at, left_at, kicked_at')
     .eq('room_id', room.id)
     .order('joined_at', { ascending: true });
 
@@ -219,6 +221,14 @@ export async function setRoomStage(roomCode, stageId) {
 export async function startRoom(roomCode) {
   const { client } = await requireSignedInUser();
   return callRpc(client, 'start_room', { p_room_code: validateRoomCode(roomCode) });
+}
+
+export async function setRoomPlaying(roomCode, isPlaying) {
+  const { client } = await requireSignedInUser();
+  return callRpc(client, 'set_room_playing', {
+    p_room_code: validateRoomCode(roomCode),
+    p_is_playing: Boolean(isPlaying),
+  });
 }
 
 export async function updateRoomProgress(roomCode, { currentStageId = null, completedStageIds = [] } = {}) {

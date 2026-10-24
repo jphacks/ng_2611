@@ -12,7 +12,7 @@ import { setupGameUi } from './ui/game-ui.js';
 import { setupPlayModeUi } from './ui/play-mode-ui.js';
 import { setupRoomUi } from './rooms/room-ui.js';
 import { setupRoomLobbyUi } from './rooms/room-lobby-ui.js';
-import { getCurrentRoom, getRoom, leaveRoom, subscribeToRoom } from './rooms/room-service.js';
+import { getCurrentRoom, getRoom, leaveRoom, setRoomPlaying, subscribeToRoom } from './rooms/room-service.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -119,13 +119,20 @@ const home = setupHome({
 });
 
 const gameUi = setupGameUi({
-  onBack: () => {
+  onBack: async () => {
     if (!activeRoomCode) {
       stopGame();
       return;
     }
 
     const roomCode = activeRoomCode;
+    try {
+      await setRoomPlaying(roomCode, false);
+    } catch (error) {
+      console.error('[room] failed to return member to lobby', error);
+      window.alert('ルームの状態を更新できなかったため、待機画面へ戻れませんでした。通信を確認して再度お試しください。');
+      return;
+    }
     stopRoomMonitor();
     stopGame({ showHome: false });
     roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
@@ -285,6 +292,7 @@ async function handleSignOut() {
   try {
     if (activeRoomCode && currentUser?.type === 'user') {
       try {
+        await setRoomPlaying(activeRoomCode, false);
         // leave_room deletes the room when the signed-in user is its creator.
         await leaveRoom(activeRoomCode);
       } catch (roomError) {
@@ -371,13 +379,19 @@ async function startGame({ resume = false, stageId = null, roomCode = null } = {
 
     scene = new MainGameScene(canvas, {
       initialProgress,
-      onProgress: handleProgress,
+      onProgress: (nextProgress) => {
+        handleProgress(nextProgress);
+        if (roomCode && nextProgress.currentStageId === null) {
+          gameUi.setBackDisabled(false, 'ROOM');
+        }
+      },
       onStageChange: (stage) => gameUi.setStageLabel(`stage ${String(stage.number).padStart(2, '0')}`),
       onGameOver: ({ reason, stageId } = {}) => {
         console.info('[gameover]', reason, stageId);
       },
     });
     activeRoomCode = roomCode;
+    if (roomCode) await setRoomPlaying(roomCode, true);
 
     gameLoop = new GameLoop({
       update: (dt) => scene.update(dt),
@@ -387,7 +401,7 @@ async function startGame({ resume = false, stageId = null, roomCode = null } = {
     home.hide();
     playModeUi.hide();
     roomLobbyUi.close();
-    gameUi.show({ user: currentUser });
+    gameUi.show({ user: currentUser, backDisabled: Boolean(roomCode) });
     gameUi.setStageLabel(`stage ${String(scene.stage.number).padStart(2, '0')}`);
     canvas.focus({ preventScroll: true });
     scene.render();
@@ -400,6 +414,13 @@ async function startGame({ resume = false, stageId = null, roomCode = null } = {
     scene?.dispose?.();
     scene = null;
     gameUi.hide();
+    if (roomCode) {
+      try {
+        await setRoomPlaying(roomCode, false);
+      } catch (roomStateError) {
+        console.warn('[room] failed to reset playing state after game startup error', roomStateError);
+      }
+    }
     activeRoomCode = null;
     if (roomCode) {
       roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
