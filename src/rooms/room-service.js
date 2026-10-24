@@ -125,6 +125,31 @@ export async function getRoom(roomCode) {
   return { ...room, members: members ?? [] };
 }
 
+/** Restore the signed-in user's active room after navigating away or reloading. */
+export async function getCurrentRoom() {
+  const { client, user } = await requireSignedInUser();
+  const { data: membership, error: membershipError } = await client
+    .from('room_members')
+    .select('room_id')
+    .eq('user_id', user.id)
+    .is('left_at', null)
+    .is('kicked_at', null)
+    .maybeSingle();
+
+  if (membershipError) throw normalizeRoomError(membershipError);
+  if (!membership) return null;
+
+  const { data: room, error: roomError } = await client
+    .from('rooms')
+    .select('room_code')
+    .eq('id', membership.room_id)
+    .maybeSingle();
+
+  if (roomError) throw normalizeRoomError(roomError);
+  if (!room) return null;
+  return getRoom(room.room_code);
+}
+
 /** Subscribe to room and member table changes. The returned function removes the channel. */
 export async function subscribeToRoom(roomId, onChange, onStatus = () => {}, channelScope = 'lobby') {
   const { client } = await requireSignedInUser();
