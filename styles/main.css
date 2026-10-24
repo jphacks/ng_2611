@@ -2530,6 +2530,65 @@ body:has(#home-screen:not([hidden])) { background: #070b18; }
   .site-header, .play-section, .hero-spark { animation: none !important; }
 }
 
+/* --- authenticated play mode selection ------------------------------- */
+body:has(#play-mode-screen:not([hidden])) {
+  display: block;
+  min-height: 100vh;
+  padding: 0;
+  background: #070b18;
+}
+
+.mode-screen {
+  min-height: 100vh;
+  color: #eaf7ff;
+  background:
+    radial-gradient(ellipse at 50% 26%, rgba(43, 105, 154, 0.2), transparent 54%),
+    linear-gradient(180deg, #0c1429, #080d1a 70%, #0b1021);
+}
+
+.mode-header { display: flex; }
+.mode-header-title { margin: 0 auto; color: #7f9cb5; font: 700 10px var(--mono); letter-spacing: 0.16em; }
+.mode-account { display: flex; align-items: center; gap: 12px; }
+.mode-sign-out { padding: 8px 12px; border: 1px solid rgba(118, 166, 202, 0.35); border-radius: 3px; background: transparent; color: #9bb2c6; font: 600 10px var(--mono); cursor: pointer; }
+.mode-sign-out:hover { border-color: #52f1cf; color: #baf8eb; }
+
+.mode-content { width: min(1100px, calc(100% - 48px)); margin: 0 auto; padding: clamp(70px, 12vh, 130px) 0 100px; }
+.mode-eyebrow { margin: 0 0 24px; color: #52f1cf; font: 800 11px var(--mono); letter-spacing: 0.13em; }
+.mode-eyebrow span { color: #718da6; }
+.mode-content h1 { margin: 0; color: #edf8ff; font-size: clamp(42px, 7vw, 76px); font-weight: 900; letter-spacing: -0.06em; line-height: 1.08; }
+.mode-content h1 span { color: #52f1cf; text-shadow: 0 0 20px rgba(82, 241, 207, 0.17); }
+.mode-intro { margin: 18px 0 38px; color: #91a8bd; font-size: 15px; font-weight: 600; }
+.mode-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.mode-option { position: relative; display: flex; flex-direction: column; align-items: flex-start; min-height: 270px; padding: 23px; overflow: hidden; border: 1px solid rgba(103, 174, 214, 0.32); border-radius: 5px; background: linear-gradient(145deg, rgba(17, 38, 62, 0.95), rgba(9, 20, 38, 0.98)); color: #e9f6ff; text-align: left; cursor: pointer; transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), border-color 220ms ease, box-shadow 240ms ease; }
+.mode-option::before { content: ""; position: absolute; top: 0; left: 22px; width: 54px; height: 2px; background: #52f1cf; box-shadow: 0 0 12px rgba(82, 241, 207, 0.75); }
+.mode-option:hover { transform: translateY(-5px); border-color: rgba(82, 241, 207, 0.75); box-shadow: 0 14px 35px rgba(0, 0, 0, 0.3), 0 0 22px rgba(82, 241, 207, 0.08); }
+.mode-option:active { transform: translateY(-1px) scale(0.99); }
+.mode-option-index { color: #7190aa; font: 700 10px var(--mono); letter-spacing: 0.1em; }
+.mode-option-icon { display: grid; place-items: center; width: 54px; height: 54px; margin: 27px 0 19px; border: 1px solid rgba(82, 241, 207, 0.42); border-radius: 4px; background: rgba(82, 241, 207, 0.08); color: #7bffe1; font: 500 30px var(--jp); text-shadow: 0 0 15px rgba(82, 241, 207, 0.25); }
+.mode-option-create .mode-option-icon { border-color: rgba(85, 200, 255, 0.44); background: rgba(85, 200, 255, 0.08); color: #81d9ff; }
+.mode-option-join .mode-option-icon { border-color: rgba(177, 142, 255, 0.45); background: rgba(177, 142, 255, 0.08); color: #c2a8ff; }
+.mode-option strong { font-size: 20px; font-weight: 850; letter-spacing: -0.03em; }
+.mode-option small { margin-top: 8px; color: #8fa6bc; font-size: 12px; font-weight: 600; }
+.mode-option-arrow { position: absolute; right: 22px; bottom: 21px; color: #52f1cf; font-size: 21px; }
+.mode-option-create .mode-option-arrow { color: #81d9ff; }
+.mode-option-join .mode-option-arrow { color: #c2a8ff; }
+.mode-message { min-height: 24px; margin: 24px 0 0; color: #8fa6bc; font-size: 13px; font-weight: 650; }
+.mode-message[data-tone="info"] { color: #8ef8dd; }
+
+@media (max-width: 760px) {
+  .mode-options { grid-template-columns: 1fr; }
+  .mode-option { min-height: 210px; }
+  .mode-option-icon { margin: 20px 0 15px; }
+}
+
+@media (max-width: 600px) {
+  .mode-header { flex-wrap: wrap; gap: 8px; }
+  .mode-header-title { display: none; }
+  .mode-account { margin-left: auto; }
+  .mode-content { width: calc(100% - 32px); padding-top: 70px; }
+  .mode-content h1 { font-size: clamp(40px, 11vw, 58px); }
+}
+
 @media (max-width: 720px) {
   .home-shell .terminal-bar { padding: 11px 16px; }
   .home-shell .terminal-main { gap: 17px; }
