@@ -54,10 +54,11 @@ AIへ作業を依頼する時は、まずリポジトリ直下の [AGENTS.md](AG
 
 `public/_headers` でキャッシュとセキュリティヘッダーを設定している。Vite が `dist/` 直下へコピーする。
 
-`wrangler.toml` points Wrangler at the static `dist/` output. Deploy with:
+Cloudflare Pages の Git 連携では、上記の Build command と Output directory を使います。CLI で手動公開する場合も Pages コマンドを使ってください。Workers 用の `wrangler deploy` は使いません。
 
 ```bash
 npm install
-npm run deploy:pages
+npm run build
+npx wrangler pages deploy dist
 ```
 

@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test",
-    "deploy:pages": "npm run build && wrangler pages deploy"
+    "deploy:pages": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
