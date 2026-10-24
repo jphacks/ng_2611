@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="./main.js"></script>
+  <title>Document</title>
+</head>
+<body>
+  <header>
+    <div id="instruction">
+      <h1 id="header-title">ステージエディタ</h1>
+      
+      <button
+        id="menu-toggle"
+        type="button"
+        aria-label="メニューを開く"
+        aria-expanded="false"
+        >☰</button>
+
+      <div class="btn-grid">
+        <button class="btn" id="new-btn">新規作成</button>
+        <button class="btn" id="save-btn">保存</button>
+        <button class="btn" id="load-btn">読み込み</button>
+        <button class="btn" id="name-change-btn">名前変更</button>
+      </div>
+      
+    </div>
+    <div id="detail">
+      <h1>使い方</h1>
+      <p>ここに使い方の説明が表示されます。</p>
+      <button class="btn-selected" id="box-btn" type="button">木箱</button>
+      <button class="btn-selected" id="wall-btn" type="button">壁</button>
+      <button class="btn-selected" id="water-btn" type="button">水</button>
+      <button class="btn-selected" id="switch-btn" type="button">スイッチ</button>
+      <button class="btn-selected" id="door-btn" type="button">ドア</button>
+      <button class="btn-selected" id="raser-btn" type="button">レーザー</button>
+      <button class="btn-selected" id="start-btn" type="button">スタート</button>
+      <button class="btn-selected" id="goal-btn" type="button">ゴール</button>
+      <button class="btn-selected" id="eraser-btn" type="button">消しゴム</button>
+    </div>
+  </header>
+  
+  <main>
+    <div id="editor-container">
+      <p>here is main editor</p>
+      <canvas id="board" width="960" height="640"></canvas>
+  </div>
+  </main>
+  
+  <footer>    
+    <p>作成用サイト</p>
+  </footer>
+</body>
+</html>
