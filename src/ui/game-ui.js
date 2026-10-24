@@ -69,10 +69,21 @@ export function setupGameUi({ onBack, onHelp } = {}) {
     if (stageLabel) stageLabel.textContent = label || 'ready';
   }
 
-  function show({ user, stageLabel: label } = {}) {
+  function setBackDisabled(disabled, label = disabled ? 'IN GAME' : 'HOME') {
+    if (!backButton) return;
+    backButton.disabled = Boolean(disabled);
+    backButton.title = disabled ? 'ルーム参加中はプレイを続けてください。' : '';
+    const labelNode = [...backButton.childNodes].find(
+      (node) => node.nodeType === 3 && node.textContent.trim(),
+    );
+    if (labelNode) labelNode.textContent = ` ${label}`;
+  }
+
+  function show({ user, stageLabel: label, backDisabled = false } = {}) {
     screen.hidden = false;
     setUser(user);
     if (label) setStageLabel(label);
+    setBackDisabled(backDisabled, backDisabled ? 'IN GAME' : 'HOME');
   }
 
   function hide() {
@@ -88,5 +99,6 @@ export function setupGameUi({ onBack, onHelp } = {}) {
     setUser,
     setSaveStatus,
     setStageLabel,
+    setBackDisabled,
   };
 }
