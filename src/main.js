@@ -261,6 +261,7 @@ async function handleSignOut() {
     currentUser = null;
     progress = createEmptyProgress();
     playModeUi.hide();
+    home.show();
     renderHome();
     home.setMessage('ログアウトしました。', 'info');
   } catch (error) {
@@ -400,12 +401,13 @@ function returnHomeAfterRoomEnd(roomCode, { confirmedDeleted = false } = {}) {
   stopRoomMonitor();
   activeRoomCode = null;
   roomLobbyUi.close();
-  stopGame({ showHome: true });
-  home.setMessage(
+  stopGame({ showHome: false });
+  playModeUi.show(currentUser);
+  playModeUi.setMessage(
     confirmedDeleted
-      ? 'ホストがルームを解散しました。プレイを終了してホームに戻りました。'
-      : 'ルームまたは参加状態を確認できなくなったため、プレイを終了してホームに戻りました。',
-    'warn',
+      ? 'ホストがルームを解散しました。プレイを終了しました。'
+      : 'ルームまたは参加状態を確認できなくなったため、プレイを終了しました。',
+    'info',
   );
 }
 
