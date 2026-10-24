@@ -312,7 +312,7 @@ function handleProgress(next) {
 
 function scheduleSave() {
   if (!services.save || !currentUser) {
-    gameUi.setSaveStatus({ state: 'idle', message: 'LOCAL ONLY' });
+    gameUi.setSaveStatus({ state: 'idle', message: '保存できません（未ログイン）' });
     return;
   }
 
@@ -328,7 +328,7 @@ function scheduleSave() {
 
     try {
       progress = await services.save.saveProgress(currentUser, payload);
-      gameUi.setSaveStatus({ state: 'saved', at: new Date() });
+      gameUi.setSaveStatus({ state: 'saved', at: new Date(), message: 'セーブ完了' });
     } catch (error) {
       console.error('[save]', error);
       gameUi.setSaveStatus({ state: 'error', message: '保存できません（通信）' });
