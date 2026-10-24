@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f6f5ef" />
+    <meta name="theme-color" content="#05080f" />
     <meta
       name="description"
       content="キーボードショートカットでダンジョンを攻略する2Dパズルゲーム。"
@@ -15,15 +15,101 @@
   <body>
     <div class="world" aria-hidden="true">
       <div class="world-grid"></div>
+      <div class="world-depth"></div>
       <div class="world-glow"></div>
       <div class="world-scan"></div>
+      <div class="world-motes"></div>
+      <div class="world-rings world-rings-left"></div>
+      <div class="world-rings world-rings-right"></div>
       <span class="floating-key floating-key-one">Ctrl + C</span>
       <span class="floating-key floating-key-two">↑</span>
       <span class="floating-key floating-key-three">Ctrl + V</span>
       <span class="floating-key floating-key-four">← →</span>
+      <span class="floating-key floating-key-small floating-key-five">Ctrl + X</span>
+      <span class="floating-key floating-key-small floating-key-six">Ctrl + Z</span>
+      <span class="floating-key floating-key-ghost floating-key-seven">Ctrl + Y</span>
+      <span class="floating-key floating-key-ghost floating-key-eight">Ctrl + A</span>
+      <span class="floating-key floating-key-small floating-key-nine">Ctrl + S</span>
+      <span class="floating-key floating-key-small floating-key-ten">Ctrl + F</span>
+      <span class="floating-key floating-key-ghost floating-key-eleven">Shift</span>
+      <span class="floating-key floating-key-ghost floating-key-twelve">Enter</span>
+      <span class="floating-key floating-key-small floating-key-thirteen">Esc</span>
+      <span class="floating-key floating-key-small floating-key-fourteen">Tab</span>
+      <span class="floating-key floating-key-ghost floating-key-fifteen">↑ ↓</span>
+      <span class="floating-key floating-key-ghost floating-key-sixteen">Ctrl + R</span>
+      <div class="world-ticker world-ticker-left">
+        <div class="world-ticker-track">
+          <span class="world-ticker-group">
+            <b>CTRL + C</b><b>CTRL + V</b><b>CTRL + X</b><b>CTRL + Z</b>
+            <b>CTRL + Y</b><b>CTRL + A</b><b>SHIFT</b><b>ENTER</b>
+          </span>
+          <span class="world-ticker-group">
+            <b>CTRL + C</b><b>CTRL + V</b><b>CTRL + X</b><b>CTRL + Z</b>
+            <b>CTRL + Y</b><b>CTRL + A</b><b>SHIFT</b><b>ENTER</b>
+          </span>
+        </div>
+      </div>
+      <div class="world-ticker world-ticker-right">
+        <div class="world-ticker-track">
+          <span class="world-ticker-group">
+            <b>PASTE</b><b>COPY</b><b>CUT</b><b>UNDO</b>
+            <b>REDO</b><b>SELECT ALL</b><b>ARROWS</b><b>WASD</b>
+          </span>
+          <span class="world-ticker-group">
+            <b>PASTE</b><b>COPY</b><b>CUT</b><b>UNDO</b>
+            <b>REDO</b><b>SELECT ALL</b><b>ARROWS</b><b>WASD</b>
+          </span>
+        </div>
+      </div>
     </div>
 
     <div id="home-screen" class="home-shell">
+      <div class="shortcut-field" aria-hidden="true">
+        <span class="bg-key bg-key-ctrl">Ctrl</span>
+        <span class="bg-key bg-key-c">C</span>
+        <span class="bg-key bg-key-v">V</span>
+        <span class="bg-key bg-key-x">X</span>
+        <span class="bg-key bg-key-z">Z</span>
+        <span class="bg-key bg-key-arrow">↑↓←→</span>
+
+        <div class="shortcut-scene scene-copy">
+          <span class="scene-label">CTRL + C / COPY</span>
+          <span class="scene-crate"></span>
+          <span class="scene-selection"></span>
+          <span class="scene-crate scene-crate-ghost"></span>
+          <span class="scene-keycaps"><kbd>Ctrl</kbd><b>+</b><kbd>C</kbd></span>
+          <svg class="scene-cursor" viewBox="0 0 24 24">
+            <path d="M5 3 18.5 10.8l-5.9 1.2-2.7 5.6L5 3Z" />
+          </svg>
+        </div>
+
+        <div class="shortcut-scene scene-paste">
+          <span class="scene-label">CTRL + V / PASTE</span>
+          <span class="scene-slots"><i></i><i></i><i></i><i></i></span>
+          <span class="scene-paste-flash"></span>
+          <span class="scene-crate scene-paste-crate"></span>
+          <span class="scene-keycaps"><kbd>Ctrl</kbd><b>+</b><kbd>V</kbd></span>
+          <svg class="scene-cursor" viewBox="0 0 24 24">
+            <path d="M5 3 18.5 10.8l-5.9 1.2-2.7 5.6L5 3Z" />
+          </svg>
+        </div>
+
+        <div class="shortcut-scene scene-text">
+          <span class="scene-label">TEXT://COPY / PASTE</span>
+          <span class="scene-sheet scene-sheet-source">
+            <i class="line line-70"></i><i class="line line-92"></i><i class="line line-54"></i>
+            <span class="scene-selection"></span>
+          </span>
+          <span class="scene-sheet scene-sheet-copy">
+            <i class="line line-70"></i><i class="line line-92"></i><i class="line line-54"></i>
+          </span>
+          <span class="scene-keycaps"><kbd>Ctrl</kbd><b>+</b><kbd>C</kbd><b>/</b><kbd>V</kbd></span>
+          <svg class="scene-cursor" viewBox="0 0 24 24">
+            <path d="M5 3 18.5 10.8l-5.9 1.2-2.7 5.6L5 3Z" />
+          </svg>
+        </div>
+      </div>
+
       <header class="site-header">
         <a class="site-brand" href="#top" aria-label="Shortcut Dungeon トップへ">
           <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
@@ -47,6 +133,11 @@
             </h1>
             <p class="hero-tagline">キーひとつで、迷宮を動かせ。</p>
             <p class="hero-description">移動して、箱をコピーして、道をひらく。<br />ショートカットが攻略のカギになるパズルゲーム。</p>
+            <ul class="hero-metrics" aria-label="ゲーム情報">
+              <li><span>STAGES</span><strong>05</strong></li>
+              <li><span>MODE</span><strong>SOLO / MULTI</strong></li>
+              <li><span>LINK</span><strong class="metric-live">ONLINE</strong></li>
+            </ul>
             <a class="scroll-link" href="#controls">遊び方を見る <span aria-hidden="true">↓</span></a>
           </div>
           <div class="hero-art" aria-hidden="true">
@@ -95,15 +186,41 @@
           <div class="section-heading">
             <p class="section-eyebrow"><span>02 — SHORTCUT KEYS</span><span>THINK FAST</span></p>
             <h2 id="shortcuts-title">ショートカットで、<span>道をひらく。</span></h2>
-            <p>Windows は Ctrl、Mac は ⌘ キーと組み合わせます。</p>
+            <p>Windows は Ctrl、Mac は ⌘ を おしながら、もう一つのキーを おします。</p>
           </div>
           <div class="shortcut-grid">
-            <article class="shortcut-card shortcut-red"><div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>C</kbd></div><div><h3>コピー</h3><p>前方の箱をコピーする</p></div><span class="shortcut-index">01</span></article>
-            <article class="shortcut-card shortcut-blue"><div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>X</kbd></div><div><h3>切り取り</h3><p>箱を回収して手元に持つ</p></div><span class="shortcut-index">02</span></article>
-            <article class="shortcut-card shortcut-green"><div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>V</kbd></div><div><h3>貼り付け</h3><p>前方の空きマスに箱を置く</p></div><span class="shortcut-index">03</span></article>
-            <article class="shortcut-card shortcut-yellow"><div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>Z</kbd></div><div><h3>元に戻す</h3><p>直前の操作を取り消す</p></div><span class="shortcut-index">04</span></article>
+            <article class="shortcut-card shortcut-red">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>C</kbd></div>
+              <div><h3>コピー</h3><p>同じ箱をもう一つ作ること。むいている方向の箱をコピーして、手元にためておく</p></div>
+              <span class="shortcut-index">01</span>
+            </article>
+            <article class="shortcut-card shortcut-blue">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>X</kbd></div>
+              <div><h3>切り取り</h3><p>箱をその場から取って、手元に持ってくる。むいている方向の箱を動かしたいときに使う</p></div>
+              <span class="shortcut-index">02</span>
+            </article>
+            <article class="shortcut-card shortcut-green">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>V</kbd></div>
+              <div><h3>貼り付け</h3><p>手元にためた箱を、むいている方向の空いているマスに置く</p></div>
+              <span class="shortcut-index">03</span>
+            </article>
+            <article class="shortcut-card shortcut-yellow">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>Z</kbd></div>
+              <div><h3>元に戻す</h3><p>一つ前の動きや箱の動かし方をなかったことにして、一つ前にもどす</p></div>
+              <span class="shortcut-index">04</span>
+            </article>
+            <article class="shortcut-card shortcut-violet">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>Y</kbd></div>
+              <div><h3>前に戻す</h3><p>元にもどした動きをもう一度やり直して、次のばしょへすすめる</p></div>
+              <span class="shortcut-index">05</span>
+            </article>
+            <article class="shortcut-card shortcut-sky">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>A</kbd></div>
+              <div><h3>全選択</h3><p>まとめて動かしたい箱を、いっぺんにえらぶ</p></div>
+              <span class="shortcut-index">06</span>
+            </article>
           </div>
-          <p class="shortcut-footnote"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd> でやり直し　／　ゲームオーバー時は <kbd>R</kbd> または <kbd>Enter</kbd> で再挑戦</p>
+          <p class="shortcut-footnote"><kbd>Ctrl</kbd> + <kbd>Y</kbd>（または <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd>）でやり直し　／　ゲームオーバーになったら <kbd>R</kbd> か <kbd>Enter</kbd> で もう一度チャレンジ</p>
         </section>
 
         <section id="play" class="play-section" aria-labelledby="play-title">

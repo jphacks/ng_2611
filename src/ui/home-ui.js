@@ -41,7 +41,7 @@ function setupScrollReveal(shell) {
   if (!('IntersectionObserver' in window) || reduceMotion) return;
 
   const targets = [...shell.querySelectorAll(
-    '.landing-hero, .guide-section, .control-card, .shortcut-card, .play-section',
+    '.landing-hero, .guide-section, .control-card, .play-section',
   )];
   if (!targets.length) return;
 
@@ -64,6 +64,166 @@ function setupScrollReveal(shell) {
   }, { threshold: 0.08, rootMargin: '0px 0px -7% 0px' });
 
   targets.forEach((element) => observer.observe(element));
+}
+
+function setupTitleReveal(shell) {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!('IntersectionObserver' in window) || reduceMotion) return;
+
+  const targets = [...shell.querySelectorAll(
+    '.wordmark, .section-heading h2, .play-heading h2',
+  )];
+  if (!targets.length) return;
+
+  targets.forEach((element) => {
+    element.classList.add('title-reveal');
+    if (element.matches('.section-heading h2, .play-heading h2')) {
+      const accent = element.querySelector('span');
+      if (accent) accent.classList.add('title-reveal-accent');
+    }
+  });
+
+  shell.classList.add('has-title-reveal');
+
+  const play = (element, activeObserver) => {
+    if (element.classList.contains('is-playing')) return;
+    element.classList.add('is-playing');
+    activeObserver?.unobserve(element);
+  };
+
+  const observer = new IntersectionObserver((entries, activeObserver) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      play(entry.target, activeObserver);
+    });
+  }, { threshold: 0.3, rootMargin: '0px 0px -10% 0px' });
+
+  const playVisible = () => {
+    targets.forEach((element) => {
+      const rect = element.getBoundingClientRect();
+      const visible = rect.top < window.innerHeight * 0.9 && rect.bottom > 0;
+      if (visible) play(element, observer);
+    });
+  };
+
+  targets.forEach((element) => observer.observe(element));
+
+  if (document.readyState === 'complete') {
+    setTimeout(playVisible, 0);
+  } else {
+    window.addEventListener('load', playVisible, { once: true });
+  }
+}
+
+function setupAmbientMotion(shell) {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const heroArt = shell.querySelector('.hero-art');
+  const header = shell.querySelector('.site-header');
+  const shortcutScenes = [...shell.querySelectorAll('.shortcut-scene')];
+  const shortcutCards = [...shell.querySelectorAll('.shortcut-grid .shortcut-card')];
+
+  if (!reduceMotion && heroArt) {
+    const finePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+    if (finePointer) {
+      let frame = 0;
+      let targetX = 0;
+      let targetY = 0;
+      let currentX = 0;
+      let currentY = 0;
+
+      const paint = () => {
+        frame = 0;
+        currentX += (targetX - currentX) * 0.14;
+        currentY += (targetY - currentY) * 0.14;
+        heroArt.style.setProperty('--px', currentX.toFixed(3));
+        heroArt.style.setProperty('--py', currentY.toFixed(3));
+        if (Math.abs(targetX - currentX) > 0.002 || Math.abs(targetY - currentY) > 0.002) {
+          frame = requestAnimationFrame(paint);
+        }
+      };
+
+      const request = () => {
+        if (!frame) frame = requestAnimationFrame(paint);
+      };
+
+      heroArt.addEventListener('pointermove', (event) => {
+        const rect = heroArt.getBoundingClientRect();
+        targetX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+        targetY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+        request();
+      });
+
+      heroArt.addEventListener('pointerleave', () => {
+        targetX = 0;
+        targetY = 0;
+        request();
+      });
+    }
+
+    shell.querySelectorAll('.control-card, .shortcut-card, .play-section').forEach((card) => {
+      card.addEventListener('pointermove', (event) => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--gx', `${event.clientX - rect.left}px`);
+        card.style.setProperty('--gy', `${event.clientY - rect.top}px`);
+      });
+    });
+  }
+
+  const clamp01 = (value) => Math.min(Math.max(value, 0), 1);
+  const easeOutCubic = (value) => 1 - (1 - value) ** 3;
+
+  let ticking = false;
+  const updateScroll = () => {
+    ticking = false;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = max > 0 ? Math.min(Math.max(window.scrollY / max, 0), 1) : 0;
+    shell.style.setProperty('--scroll', progress.toFixed(4));
+    header?.classList.toggle('is-scrolled', window.scrollY > 12);
+
+    const viewport = window.innerHeight;
+    const start = viewport * 0.95;
+    const span = Math.max(viewport * 0.62, 1);
+
+    shortcutScenes.forEach((scene) => {
+      const rect = scene.getBoundingClientRect();
+      const anchor = rect.top + rect.height * 0.35;
+      const sceneProgress = clamp01((start - anchor) / span);
+      const approach = easeOutCubic(clamp01(sceneProgress / 0.62));
+      const copy = clamp01((sceneProgress - 0.42) / 0.3);
+      const paste = clamp01((sceneProgress - 0.66) / 0.3);
+
+      scene.style.setProperty('--p', sceneProgress.toFixed(3));
+      scene.style.setProperty('--approach', approach.toFixed(3));
+      scene.style.setProperty('--copy', copy.toFixed(3));
+      scene.style.setProperty('--paste', paste.toFixed(3));
+    });
+
+    const focusLine = viewport * 0.35;
+    const focusRange = Math.max(viewport * 0.52, 1);
+    const endFocus = clamp01(1 - (max - window.scrollY) / Math.max(viewport * 0.35, 1));
+
+    shortcutCards.forEach((card, index) => {
+      const rect = card.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+      const focus = clamp01(1 - Math.abs(center - focusLine) / focusRange);
+      const baseAlpha = 0.24 + focus * 0.76;
+      const alpha = index === shortcutCards.length - 1
+        ? Math.max(baseAlpha, 0.24 + endFocus * 0.76)
+        : baseAlpha;
+
+      card.style.setProperty('--card-alpha', alpha.toFixed(3));
+    });
+  };
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(updateScroll);
+  };
+
+  updateScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
 }
 
 export function setupHome({
@@ -96,6 +256,8 @@ export function setupHome({
   }
 
   setupScrollReveal(shell);
+  setupTitleReveal(shell);
+  setupAmbientMotion(shell);
 
   const googleState = googleButton.querySelector('.choice-state');
   const guestState = guestButton.querySelector('.choice-state');
