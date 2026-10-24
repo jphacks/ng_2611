@@ -114,7 +114,9 @@ function renderHome(extra = {}) {
 }
 
 async function boot() {
-  home.setLoading(true);
+  // Paint the home screen immediately. A slow auth/session lookup should not
+  // cover the public landing page with a blocking boot overlay.
+  renderHome({ loading: false });
 
   const [auth, save] = await Promise.all([
     loadOptional(optionalModules.auth),
