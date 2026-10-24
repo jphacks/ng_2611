@@ -32,7 +32,7 @@ function buildStageItems(stages, total) {
   return Array.from({ length: total || STAGE_TOTAL_FALLBACK }, (_, index) => ({
     id: `stage-${index + 1}`,
     number: index + 1,
-    title: `STAGE ${pad(index + 1)}`,
+    title: 'STAGE',
   }));
 }
 
