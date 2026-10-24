@@ -37,7 +37,7 @@ const COLORS = {
 
 /** 1画面のCanvasダンジョンとプレイヤー操作を管理します。 */
 export default class MainGameScene {
-  constructor(canvas) {
+  constructor(canvas, { initialProgress, onProgress, onStageChange } = {}) {
     if (!(canvas instanceof HTMLCanvasElement)) {
       throw new TypeError('MainGameSceneにはCanvas要素を指定してください。');
     }
@@ -51,6 +51,17 @@ export default class MainGameScene {
     this.tileSize = 40;
     this.elapsed = 0;
     this.stageManager = new StageManager(STAGES);
+    this.completedStageIds = new Set(initialProgress?.completedStageIds ?? []);
+    this.onProgress = onProgress;
+    this.onStageChange = onStageChange;
+
+    const savedStageIndex = STAGES.findIndex((stage) => stage.id === initialProgress?.currentStageId);
+    if (savedStageIndex >= 0) this.stageManager.index = savedStageIndex;
+    else {
+      const nextStageIndex = STAGES.findIndex((stage) => !this.completedStageIds.has(stage.id));
+      if (nextStageIndex >= 0) this.stageManager.index = nextStageIndex;
+    }
+
     this.stage = this.stageManager.current;
     this.player = {
       x: (this.stage.start.x + 0.5) * this.tileSize,
@@ -61,6 +72,7 @@ export default class MainGameScene {
     };
     this.inventory = { skillPotion: 0 };
     this.loadStage(this.stage);
+    this.onStageChange?.(this.stage);
     this.lastShortcutMessage = '矢印キー / WASD で1マスずつ移動';
 
     this.input = new InputHandler({
@@ -448,14 +460,25 @@ export default class MainGameScene {
   checkGoal() {
     const tile = this.getPlayerTile();
     if (tile.x !== this.goal.x || tile.y !== this.goal.y) return;
-const nextStage = this.stageManager.advance();
+
+    this.completedStageIds.add(this.stage.id);
+    const nextStage = this.stageManager.advance();
     if (nextStage) {
       this.loadStage(nextStage);
+      this.onProgress?.({
+        completedStageIds: [...this.completedStageIds],
+        currentStageId: nextStage.id,
+      });
+      this.onStageChange?.(nextStage);
       this.lastShortcutMessage = `STAGE ${nextStage.number}開始: ${nextStage.name}`;
       return;
     }
 
     this.runCleared = true;
+    this.onProgress?.({
+      completedStageIds: [...this.completedStageIds],
+      currentStageId: null,
+    });
     this.lastShortcutMessage = '全ステージクリア！ R / Enter で最初から';
     this.input.setEnabled(false);
     window.addEventListener('keydown', this.handleRetryKeyDown);

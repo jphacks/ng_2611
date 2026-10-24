@@ -226,12 +226,20 @@ async function loadGameModules() {
   return gameModules;
 }
 
+function getGameConstructors(modules) {
+  return {
+    MainGameScene: modules.scene?.default ?? modules.scene?.MainGameScene,
+    GameLoop: modules.loop?.default ?? modules.loop?.GameLoop,
+  };
+}
+
 async function startGame({ resume = false } = {}) {
   if (scene) return;
 
   const modules = await loadGameModules();
+  const { MainGameScene, GameLoop } = getGameConstructors(modules);
 
-  if (!modules.scene?.MainGameScene || !modules.loop?.GameLoop) {
+  if (!MainGameScene || !GameLoop) {
     home.setMessage('ゲーム本体はまだ接続されていません。ホーム画面のみ表示中です。', 'warn');
     return;
   }
@@ -244,22 +252,23 @@ async function startGame({ resume = false } = {}) {
   try {
     const initialProgress = resume ? progress : createEmptyProgress();
 
-    scene = new modules.scene.MainGameScene(canvas, {
+    scene = new MainGameScene(canvas, {
       initialProgress,
       onProgress: handleProgress,
+      onStageChange: (stage) => gameUi.setStageLabel(`stage ${String(stage.number).padStart(2, '0')}`),
       onGameOver: ({ reason, stageId } = {}) => {
         console.info('[gameover]', reason, stageId);
       },
     });
 
-    gameLoop = new modules.loop.GameLoop({
+    gameLoop = new GameLoop({
       update: (dt) => scene.update(dt),
       render: () => scene.render(),
     });
 
     home.hide();
     gameUi.show({ user: currentUser });
-    gameUi.setStageLabel(initialProgress.currentStageId || 'stage 01');
+    gameUi.setStageLabel(`stage ${String(scene.stage.number).padStart(2, '0')}`);
     canvas.focus({ preventScroll: true });
     scene.render();
     gameLoop.start();
