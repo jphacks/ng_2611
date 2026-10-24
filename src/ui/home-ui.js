@@ -36,6 +36,36 @@ function buildStageItems(stages, total) {
   }));
 }
 
+function setupScrollReveal(shell) {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!('IntersectionObserver' in window) || reduceMotion) return;
+
+  const targets = [...shell.querySelectorAll(
+    '.landing-hero, .guide-section, .control-card, .shortcut-card, .play-section',
+  )];
+  if (!targets.length) return;
+
+  targets.forEach((element) => {
+    const siblings = [...element.parentElement.children].filter((child) => (
+      child.matches('.control-card, .shortcut-card')
+    ));
+    const index = siblings.indexOf(element);
+    element.style.setProperty('--reveal-delay', `${Math.max(index, 0) * 90}ms`);
+    element.classList.add('reveal-item');
+  });
+
+  shell.classList.add('has-scroll-reveal');
+  const observer = new IntersectionObserver((entries, activeObserver) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      activeObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -7% 0px' });
+
+  targets.forEach((element) => observer.observe(element));
+}
+
 export function setupHome({
   onGuest,
   onGoogle,
@@ -64,6 +94,8 @@ export function setupHome({
   if (!shell || !googleButton || !guestButton || !startButton) {
     throw new Error('ホーム画面の要素が見つかりません。');
   }
+
+  setupScrollReveal(shell);
 
   const googleState = googleButton.querySelector('.choice-state');
   const guestState = guestButton.querySelector('.choice-state');
@@ -117,17 +149,21 @@ export function setupHome({
     const items = buildStageItems(state.stages, state.totalStages);
     const cleared = new Set(state.progress?.completedStageIds ?? []);
     const clearedCount = items.filter((stage) => cleared.has(stage.id)).length;
+    const hasCloudSave = state.user?.type === 'user';
 
     if (progressSummary) {
+      progressSummary.hidden = !hasCloudSave;
       progressSummary.replaceChildren();
-      progressSummary.append('CLEARED ');
-      const done = document.createElement('span');
-      done.className = 'sum-done';
-      done.textContent = String(clearedCount);
-      progressSummary.append(done, ` / ${items.length}`);
+      if (hasCloudSave) {
+        progressSummary.append('クリア ');
+        const done = document.createElement('span');
+        done.className = 'sum-done';
+        done.textContent = String(clearedCount);
+        progressSummary.append(done, ` / ${items.length}`);
+      }
     }
 
-    if (bossBadge) bossBadge.hidden = !state.progress?.bossCleared;
+    if (bossBadge) bossBadge.hidden = !hasCloudSave || !state.progress?.bossCleared;
     renderStages();
   }
 
@@ -142,12 +178,12 @@ export function setupHome({
     }
 
     if (user?.type === 'guest') {
-      userBadge.textContent = 'GUEST SESSION';
+      userBadge.textContent = 'ゲスト';
       userBadge.dataset.tone = 'guest';
       return;
     }
 
-    userBadge.textContent = 'NO SESSION';
+    userBadge.textContent = '未ログイン';
     userBadge.dataset.tone = 'none';
   }
 
@@ -231,7 +267,7 @@ export function setupHome({
       return;
     }
 
-    selectionStatus.textContent = 'セッションを選択してください。';
+    selectionStatus.textContent = 'プレイ方法を選択してください。';
   }
 
   function paint() {

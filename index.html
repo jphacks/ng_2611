@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#04080f" />
+    <meta name="theme-color" content="#f6f5ef" />
     <meta
       name="description"
       content="キーボードショートカットでダンジョンを攻略する2Dパズルゲーム。"
@@ -17,153 +17,137 @@
       <div class="world-grid"></div>
       <div class="world-glow"></div>
       <div class="world-scan"></div>
+      <span class="floating-key floating-key-one">Ctrl + C</span>
+      <span class="floating-key floating-key-two">↑</span>
+      <span class="floating-key floating-key-three">Ctrl + V</span>
+      <span class="floating-key floating-key-four">← →</span>
     </div>
 
-    <main id="home-screen" class="home-shell">
-      <section class="terminal" aria-labelledby="home-title">
-        <header class="terminal-bar">
-          <div class="terminal-dots" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </div>
-          <p class="terminal-path">
-            operator@shortcut-dungeon:<span>~</span>
-          </p>
-          <div class="terminal-bar-right">
-            <span class="chip chip-live">SECURE SHELL</span>
-            <span id="user-badge" class="chip chip-user" data-tone="none">NO SESSION</span>
-          </div>
-        </header>
+    <div id="home-screen" class="home-shell">
+      <header class="site-header">
+        <a class="site-brand" href="#top" aria-label="Shortcut Dungeon トップへ">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span>SHORTCUT<br />DUNGEON</span>
+        </a>
+        <nav class="site-nav" aria-label="ページ内ナビゲーション">
+          <a href="#controls">基本操作</a>
+          <a href="#shortcuts">ショートカット</a>
+          <a href="#play">プレイする</a>
+        </nav>
+        <span id="user-badge" class="chip chip-user" data-tone="none">未ログイン</span>
+      </header>
 
-        <div class="terminal-body">
-          <div class="terminal-main">
-            <p class="eyebrow">
-              <span class="eyebrow-dot" aria-hidden="true"></span>
-              [ SYSTEM READY ] KEYBOARD TRAINING v2.6
-            </p>
-
-            <h1 id="home-title" class="wordmark" aria-label="ショートカット・ダンジョン">
-              <span class="wordmark-main" aria-hidden="true">SHORTCUT</span>
-              <span class="wordmark-sep" aria-hidden="true">://</span>
-              <span class="wordmark-sub" aria-hidden="true">DUNGEON</span>
+      <main class="home-content">
+        <section id="top" class="landing-hero" aria-labelledby="home-title">
+          <div class="hero-copy">
+            <p class="section-eyebrow"><span>KEYBOARD PUZZLE GAME</span><span>01 / START</span></p>
+            <h1 id="home-title" class="wordmark">
+              <span class="wordmark-main">SHORTCUT</span>
+              <span class="wordmark-sub">DUNGEON</span>
             </h1>
-
-            <p class="home-kicker">コピー・貼り付け・切り取りで、迷宮を書き換えろ。</p>
-            <p class="home-lead">
-              ショートカットは武器になる。キー入力ひとつで木箱を動かし、ゲートを開き、
-              レーザーをかわす。遊びながらPC操作が身につく2Dダンジョン。
-            </p>
-
-            <p class="prompt-line" aria-hidden="true">
-              <span class="prompt-mark">guest@localhost</span>:<span class="prompt-path">~/start</span>$
-              <span class="prompt-cmd">select session</span><span class="caret"></span>
-            </p>
-
-            <div class="login-options" aria-label="プレイ方法を選択">
-              <button
-                id="google-login-button"
-                class="choice choice-google"
-                type="button"
-                disabled
-                aria-describedby="google-note"
-              >
-                <span class="choice-icon" aria-hidden="true">G</span>
-                <span class="choice-text">
-                  <strong>Google でログイン</strong>
-                  <small>進捗をクラウドに保存 / 別端末でも続きから</small>
-                </span>
-                <span class="choice-state" data-tone="none">OFFLINE</span>
-              </button>
-              <p id="google-note" class="option-note">
-                Supabase が未設定のため、現在 Google ログインは利用できません。
-              </p>
-
-              <button
-                id="guest-play-button"
-                class="choice choice-guest"
-                type="button"
-                aria-pressed="false"
-              >
-                <span class="choice-icon" aria-hidden="true">&gt;_</span>
-                <span class="choice-text">
-                  <strong>ゲストでプレイ</strong>
-                  <small>登録不要 / 進捗はこのブラウザに保存</small>
-                </span>
-                <span class="choice-state" data-tone="none">STANDBY</span>
-              </button>
-              <p class="option-note">いつでも開始できます。あとから Google 連携も可能です。</p>
-            </div>
-
-            <div class="actions">
-              <button id="start-game-button" class="start-button" type="button" disabled>
-                <span class="start-label">GAME START</span>
-                <span class="start-arrow" aria-hidden="true">▸</span>
-              </button>
-              <button id="resume-game-button" class="resume-button" type="button" hidden>
-                RESUME
-              </button>
-              <button id="sign-out-button" class="ghost-button" type="button" hidden>
-                LOG OUT
-              </button>
-              <button id="help-button" class="ghost-button" type="button">HELP</button>
-            </div>
-
-            <p id="selection-status" class="selection-status" aria-live="polite">
-              セッションを選択してください。
-            </p>
-            <p id="home-message" class="home-message" role="status"></p>
-
-            <ul class="feature-strip">
-              <li><span>STAGES</span>05</li>
-              <li><span>MODE</span>KEYBOARD</li>
-              <li><span>SAVE</span>AUTO</li>
-              <li><span>BUILD</span>LOCAL</li>
-            </ul>
+            <p class="hero-tagline">キーひとつで、迷宮を動かせ。</p>
+            <p class="hero-description">移動して、箱をコピーして、道をひらく。<br />ショートカットが攻略のカギになるパズルゲーム。</p>
+            <a class="scroll-link" href="#controls">遊び方を見る <span aria-hidden="true">↓</span></a>
           </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="hero-board">
+              <span class="board-cell cell-blue">↑</span><span class="board-cell"></span><span class="board-cell cell-yellow">▣</span><span class="board-cell"></span>
+              <span class="board-cell"></span><span class="board-cell cell-red">C</span><span class="board-cell cell-green">▣</span><span class="board-cell"></span>
+              <span class="board-cell cell-blue">←</span><span class="board-cell"></span><span class="board-cell"></span><span class="board-cell cell-red">GO</span>
+            </div>
+            <span class="art-label art-label-top">COPY / PASTE</span>
+            <span class="art-label art-label-bottom">FIND YOUR WAY →</span>
+            <span class="hero-spark spark-one">✳</span><span class="hero-spark spark-two">✳</span>
+          </div>
+        </section>
 
-          <aside class="terminal-side" aria-label="システム情報">
-            <section class="panel">
-              <h2>PROGRESS</h2>
-              <p id="progress-summary" class="progress-summary">CLEARED 0 / 5</p>
-              <ul id="stage-progress" class="stage-list"></ul>
-              <p id="boss-badge" class="boss-badge" hidden>BOSS CLEAR</p>
-            </section>
+        <section id="controls" class="guide-section" aria-labelledby="controls-title">
+          <div class="section-heading">
+            <p class="section-eyebrow"><span>01 — BASIC CONTROLS</span><span>MOVE</span></p>
+            <h2 id="controls-title">まずは、<span>動かしてみよう。</span></h2>
+            <p>矢印キーか WASD で、プレイヤーを1マスずつ移動します。</p>
+          </div>
+          <div class="control-layout">
+            <div class="control-card control-card-blue">
+              <span class="card-number">01</span>
+              <div class="keypad" aria-label="矢印キーで移動">
+                <kbd class="key-up">↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>
+              </div>
+              <h3>行きたい方向へ移動</h3>
+              <p>矢印キー、または W・A・S・D を使います。</p>
+            </div>
+            <div class="control-card control-card-yellow">
+              <span class="card-number">02</span>
+              <div class="mini-maze" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <h3>道を見つけてゴールへ</h3>
+              <p>壁や仕掛けをよけながら、出口を目指しましょう。</p>
+            </div>
+            <div class="control-card control-card-green">
+              <span class="card-number">03</span>
+              <div class="crate-demo" aria-hidden="true"><span>▣</span><b>→</b><span>▣</span></div>
+              <h3>目の前の箱を活用</h3>
+              <p>向いている方向の箱に、コピーや貼り付けを使えます。</p>
+            </div>
+          </div>
+        </section>
 
-            <section class="panel">
-              <h2>KEYMAP</h2>
-              <ul class="keymap">
-                <li><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd><span>MOVE</span></li>
-                <li><kbd>Ctrl</kbd><kbd>C</kbd><span>COPY</span></li>
-                <li><kbd>Ctrl</kbd><kbd>V</kbd><span>PASTE</span></li>
-                <li><kbd>Ctrl</kbd><kbd>X</kbd><span>CUT</span></li>
-                <li><kbd>Ctrl</kbd><kbd>Z</kbd><span>UNDO</span></li>
-                <li><kbd>R</kbd><kbd>Enter</kbd><span>RETRY</span></li>
-              </ul>
-            </section>
+        <section id="shortcuts" class="guide-section shortcut-section" aria-labelledby="shortcuts-title">
+          <div class="section-heading">
+            <p class="section-eyebrow"><span>02 — SHORTCUT KEYS</span><span>THINK FAST</span></p>
+            <h2 id="shortcuts-title">ショートカットで、<span>道をひらく。</span></h2>
+            <p>Windows は Ctrl、Mac は ⌘ キーと組み合わせます。</p>
+          </div>
+          <div class="shortcut-grid">
+            <article class="shortcut-card shortcut-red"><div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>C</kbd></div><div><h3>コピー</h3><p>前方の箱をコピーする</p></div><span class="shortcut-index">01</span></article>
+            <article class="shortcut-card shortcut-blue"><div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>X</kbd></div><div><h3>切り取り</h3><p>箱を回収して手元に持つ</p></div><span class="shortcut-index">02</span></article>
+            <article class="shortcut-card shortcut-green"><div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>V</kbd></div><div><h3>貼り付け</h3><p>前方の空きマスに箱を置く</p></div><span class="shortcut-index">03</span></article>
+            <article class="shortcut-card shortcut-yellow"><div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>Z</kbd></div><div><h3>元に戻す</h3><p>直前の操作を取り消す</p></div><span class="shortcut-index">04</span></article>
+          </div>
+          <p class="shortcut-footnote"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd> でやり直し　／　ゲームオーバー時は <kbd>R</kbd> または <kbd>Enter</kbd> で再挑戦</p>
+        </section>
 
-            <section class="panel panel-feed">
-              <h2>SYSLOG</h2>
-              <ul class="sys-log" aria-hidden="true">
-                <li>keyboard driver ready</li>
-                <li>clipboard buffer empty</li>
-                <li>stage grid 24 x 16 loaded</li>
-                <li>awaiting operator input</li>
-              </ul>
-            </section>
-          </aside>
-        </div>
+        <section id="play" class="play-section" aria-labelledby="play-title">
+          <div class="play-heading">
+            <p class="section-eyebrow"><span>03 — YOUR ADVENTURE</span><span>READY?</span></p>
+            <h2 id="play-title">準備ができたら、<br /><span>冒険をはじめよう。</span></h2>
+            <p>プレイ方法を選んでください。</p>
+            <p id="progress-summary" class="progress-summary">クリア 0 / 5</p>
+            <ul id="stage-progress" class="stage-list" hidden></ul>
+            <p id="boss-badge" class="boss-badge" hidden>BOSS CLEAR</p>
+          </div>
+          <div class="play-panel">
+            <div class="login-options" aria-label="プレイ方法を選択">
+              <button id="google-login-button" class="choice choice-google" type="button" disabled aria-describedby="google-note">
+                <span class="choice-icon" aria-hidden="true">G</span>
+                <span class="choice-text"><strong>Google でログイン</strong><small>進捗を保存して、続きからプレイ</small></span>
+                <span class="choice-arrow" aria-hidden="true">↗</span>
+              </button>
+              <p id="google-note" class="option-note">Google ログインは現在利用できません。</p>
+              <button id="guest-play-button" class="choice choice-guest" type="button" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true">▶</span>
+                <span class="choice-text"><strong>ゲストでプレイ</strong><small>アカウント登録なしですぐに遊べます</small></span>
+                <span class="choice-arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+            <p id="selection-status" class="selection-status" aria-live="polite">プレイ方法を選択してください。</p>
+            <div class="actions">
+              <button id="start-game-button" class="start-button" type="button" disabled>ゲーム開始 <span class="start-arrow" aria-hidden="true">→</span></button>
+              <button id="resume-game-button" class="resume-button" type="button" hidden>続きから</button>
+              <button id="sign-out-button" class="ghost-button" type="button" hidden>ログアウト</button>
+              <button id="help-button" class="ghost-button" type="button">操作ガイド</button>
+            </div>
+            <p id="home-message" class="home-message" role="status"></p>
+          </div>
+        </section>
 
-        <footer class="terminal-foot">
-          <span>SHORTCUT DUNGEON / 2026</span>
-          <span>BUILD 0.1.0 · LOCAL</span>
-        </footer>
-      </section>
+        <footer class="home-footer"><span>SHORTCUT DUNGEON</span><a href="#top">ページの先頭へ ↑</a></footer>
+      </main>
 
       <div id="auth-loading" class="boot-overlay" role="status" aria-live="polite">
-        <p class="boot-line">BOOT SEQUENCE</p>
-        <p class="boot-text">セッションを確認しています…</p>
+        <p class="boot-line">READY</p><p class="boot-text">セッションを確認しています…</p>
         <div class="boot-bar" aria-hidden="true"><span></span></div>
       </div>
-    </main>
+    </div>
 
     <main id="game-screen" class="game-shell" hidden>
       <section class="game-terminal" aria-label="ゲーム画面">

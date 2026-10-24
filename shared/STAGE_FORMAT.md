@@ -20,8 +20,8 @@ AIがステージやローダーを実装する時の唯一の正規仕様です
   "obstacles": [{ "x": 5, "y": 5, "width": 1, "height": 4 }],
   "items": [{ "type": "skillPotion", "x": 3, "y": 12 }],
   "blocks": [{ "id": "intro-crate", "name": "木箱", "kind": "normal", "x": 3, "y": 13, "color": "#b57d50" }],
-  "colorSwitches": [], "colorWalls": [], "lasers": [], "magma": [],
-  "goal": { "x": 21, "y": 2 }, "goalBlock": null,
+  "colorSwitches": [], "colorWalls": [], "lasers": [], "water": [],
+  "goal": { "x": 21, "y": 2 },
   "shortcutGate": { "x": 12, "y": 2 },
   "hint": "スタート横の箱に向いてCtrl+C。ゲートが開きます"
 }
@@ -36,14 +36,13 @@ AIがステージやローダーを実装する時の唯一の正規仕様です
 | `name` | 1〜40文字 | HUD表示名 |
 | `start` | `{x,y,facing}`、facingは上下左右 | 開始位置と初期の向き |
 | `obstacles` | `{x,y,width,height}` の配列 | 固定壁 |
-| `items` | `skillPotion`/`lifePotion` の配列 | 接触取得ポーション |
+| `items` | `skillPotion` の配列 | 接触取得ポーション |
 | `blocks` | `id,name,kind,x,y,color` の配列 | コピー・切り取り・貼り付け対象 |
 | `colorSwitches` | `{x,y,color}` の配列 | 色つき木箱を置く台 |
 | `colorWalls` | `{x,y,width,height,color}` の配列 | 色連動の通行不能壁 |
 | `lasers` | `{x,y,direction,length}` の配列 | 発射装置 |
-| `magma` | `{x,y}` の配列 | 危険マス |
+| `water` | `{x,y}` の配列 | 通行できない水マス。通常木箱を置くと渡れる足場になる |
 | `goal` | `{x,y}` | プレイヤーのゴール |
-| `goalBlock` | `{x,y}` または `null` | 木箱配置が必要なゴール条件 |
 | `shortcutGate` | `{x,y}` または `null` | コピー成功後に開く壁 |
 | `hint` | 文字列（70文字以下推奨） | 下部ヒント |
 
@@ -52,6 +51,6 @@ AIがステージやローダーを実装する時の唯一の正規仕様です
 ## 検証ルール
 
 - 未知のフィールド、必須フィールド欠落、範囲外、重複座標はエラー。
-- start/goal/壁/アイテム/木箱/スイッチ/色壁/レーザー/マグマ/ゲート/goalBlockは重ねない。
+- start/goal/壁/アイテム/スイッチ/色壁/レーザー/水場/ゲートは重ねない。通常木箱は水マスに置いて橋にできる。
 - レーザーのdirectionは `up/down/left/right`、lengthは1〜21で範囲外へ出ない。
 - JSONは64KB以下。作成後は必ず `npm run validate:stages`。
