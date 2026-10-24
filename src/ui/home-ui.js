@@ -41,16 +41,21 @@ function setupScrollReveal(shell) {
   if (!('IntersectionObserver' in window) || reduceMotion) return;
 
   const targets = [...shell.querySelectorAll(
-    '.landing-hero, .guide-section, .control-card, .play-section',
+    '.section-heading, .control-card, .shortcut-card, .shortcut-footnote, .play-heading, .play-panel',
   )];
   if (!targets.length) return;
 
   targets.forEach((element) => {
-    const siblings = [...element.parentElement.children].filter((child) => (
-      child.matches('.control-card, .shortcut-card')
-    ));
+    const groupSelector = element.matches('.control-card')
+      ? '.control-card'
+      : element.matches('.shortcut-card')
+        ? '.shortcut-card'
+        : null;
+    const siblings = groupSelector
+      ? [...element.parentElement.children].filter((child) => child.matches(groupSelector))
+      : [];
     const index = siblings.indexOf(element);
-    element.style.setProperty('--reveal-delay', `${Math.max(index, 0) * 90}ms`);
+    element.style.setProperty('--reveal-delay', `${Math.min(Math.max(index, 0), 2) * 80}ms`);
     element.classList.add('reveal-item');
   });
 
@@ -61,7 +66,7 @@ function setupScrollReveal(shell) {
       entry.target.classList.add('is-visible');
       activeObserver.unobserve(entry.target);
     });
-  }, { threshold: 0.08, rootMargin: '0px 0px -7% 0px' });
+  }, { threshold: 0.15 });
 
   targets.forEach((element) => observer.observe(element));
 }
@@ -120,7 +125,6 @@ function setupAmbientMotion(shell) {
   const heroArt = shell.querySelector('.hero-art');
   const header = shell.querySelector('.site-header');
   const shortcutScenes = [...shell.querySelectorAll('.shortcut-scene')];
-  const shortcutCards = [...shell.querySelectorAll('.shortcut-grid .shortcut-card')];
 
   if (!reduceMotion && heroArt) {
     const finePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
@@ -196,22 +200,6 @@ function setupAmbientMotion(shell) {
       scene.style.setProperty('--approach', approach.toFixed(3));
       scene.style.setProperty('--copy', copy.toFixed(3));
       scene.style.setProperty('--paste', paste.toFixed(3));
-    });
-
-    const focusLine = viewport * 0.35;
-    const focusRange = Math.max(viewport * 0.52, 1);
-    const endFocus = clamp01(1 - (max - window.scrollY) / Math.max(viewport * 0.35, 1));
-
-    shortcutCards.forEach((card, index) => {
-      const rect = card.getBoundingClientRect();
-      const center = rect.top + rect.height / 2;
-      const focus = clamp01(1 - Math.abs(center - focusLine) / focusRange);
-      const baseAlpha = 0.24 + focus * 0.76;
-      const alpha = index === shortcutCards.length - 1
-        ? Math.max(baseAlpha, 0.24 + endFocus * 0.76)
-        : baseAlpha;
-
-      card.style.setProperty('--card-alpha', alpha.toFixed(3));
     });
   };
 
