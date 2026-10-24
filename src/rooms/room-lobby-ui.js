@@ -1,5 +1,5 @@
 import './room-ui.css';
-import { getRoom, leaveRoom, setRoomStage, startRoom, subscribeToRoom } from './room-service.js';
+import { deleteRoom, getRoom, leaveRoom, setRoomStage, startRoom, subscribeToRoom } from './room-service.js';
 
 function createLobby() {
   const screen = document.createElement('section');
@@ -43,9 +43,12 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
   let userId = null;
   let stages = [];
   let unsubscribe = null;
+  let pollTimer = null;
   let generation = 0;
   let busy = false;
+  let refreshing = false;
   let handledStartAt = null;
+  let currentRoom = null;
 
   function setStatus(text, tone = '') {
     status.textContent = text;
@@ -56,9 +59,12 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     generation += 1;
     unsubscribe?.();
     unsubscribe = null;
+    if (pollTimer !== null) window.clearInterval(pollTimer);
+    pollTimer = null;
     screen.hidden = true;
     roomCode = null;
     roomId = null;
+    currentRoom = null;
   }
 
   function renderMembers(room) {
@@ -106,10 +112,23 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     label.textContent = `選択中のステージ：${selectedStage?.title || room.stage_id || '未選択'}`;
     stageArea.append(label);
 
+    const startKey = room.started_at ? `${room.id}:${room.started_at}` : null;
+    if (startKey && room.stage_id && handledStartAt !== startKey) {
+      handledStartAt = startKey;
+      if (room.host_user_id === userId) {
+        startStatus.textContent = '開始を参加者へ通知しました。ホストは待機画面に残ります。';
+      } else {
+        startStatus.textContent = 'ホストが開始しました。ゲームを開いています…';
+        onStart?.({ roomCode, stageId: room.stage_id });
+      }
+    }
+
     if (room.host_user_id !== userId) {
-      startStatus.textContent = room.started_at
-        ? 'ステージを開始しています…'
-        : room.stage_id ? 'ホストが開始するまでお待ちください。' : 'ホストがステージを選ぶまでお待ちください。';
+      if (!room.started_at) {
+        startStatus.textContent = room.stage_id
+          ? 'ホストが開始するまでお待ちください。'
+          : 'ホストがステージを選ぶまでお待ちください。';
+      }
       return;
     }
 
@@ -174,28 +193,34 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
       }
     });
     stageArea.append(startButton);
-    startStatus.textContent = room.started_at ? '参加者へ開始を通知しました。' : '';
+    startStatus.textContent = room.started_at
+      ? '開始を参加者へ通知しました。ホストは待機画面に残ります。'
+      : '';
     startStatus.dataset.tone = room.started_at ? 'success' : '';
-
-    const startKey = room.started_at ? `${room.id}:${room.started_at}` : null;
-    if (startKey && room.stage_id && handledStartAt !== startKey) {
-      handledStartAt = startKey;
-      onStart?.({ roomCode, stageId: room.stage_id });
-    }
   }
 
   async function refresh(expectedGeneration = generation) {
-    if (!roomCode) return;
+    if (!roomCode || refreshing) return;
+    refreshing = true;
     try {
       const room = await getRoom(roomCode);
       if (expectedGeneration !== generation || screen.hidden) return;
       roomId = room.id;
+      currentRoom = room;
+      leaveButton.textContent = room.created_by === userId ? 'ルームを終了' : '退出する';
       renderStageControl(room);
       renderMembers(room);
       setStatus('ルームは待機中です。参加者の変更は自動で反映されます。', 'success');
     } catch (error) {
       if (expectedGeneration !== generation) return;
+      if (error.code === 'ROOM_NOT_FOUND') {
+        close();
+        onClose?.({ roomDeleted: true });
+        return;
+      }
       setStatus(error.message || 'ルーム情報を取得できませんでした。', 'error');
+    } finally {
+      refreshing = false;
     }
   }
 
@@ -216,6 +241,8 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
       const initialRoom = await getRoom(roomCode);
       if (currentGeneration !== generation) return;
       roomId = initialRoom.id;
+      currentRoom = initialRoom;
+      leaveButton.textContent = initialRoom.created_by === userId ? 'ルームを終了' : '退出する';
       renderStageControl(initialRoom);
       renderMembers(initialRoom);
       setStatus('ルームは待機中です。参加者の変更は自動で反映されます。', 'success');
@@ -229,6 +256,7 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
         return;
       }
       unsubscribe = stopSubscription;
+      pollTimer = window.setInterval(() => refresh(currentGeneration), 5000);
       await refresh(currentGeneration);
     } catch (error) {
       if (currentGeneration === generation) {
@@ -237,14 +265,21 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     }
   }
 
-  refreshButton.addEventListener('click', () => refresh());
+  refreshButton.addEventListener('click', async () => {
+    if (refreshing) return;
+    refreshButton.disabled = true;
+    setStatus('最新のルーム情報を読み込んでいます…');
+    await refresh();
+    if (!screen.hidden) refreshButton.disabled = false;
+  });
   leaveButton.addEventListener('click', async () => {
     if (!roomCode || busy) return;
     busy = true;
     leaveButton.disabled = true;
     setStatus('ルームから退出しています…');
     try {
-      await leaveRoom(roomCode);
+      if (currentRoom?.created_by === userId) await deleteRoom(roomCode);
+      else await leaveRoom(roomCode);
       close();
       onClose?.();
     } catch (error) {
