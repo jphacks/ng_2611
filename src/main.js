@@ -9,6 +9,7 @@
  */
 import { setupHome } from './ui/home-ui.js';
 import { setupGameUi } from './ui/game-ui.js';
+import { setupPlayModeUi } from './ui/play-mode-ui.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -92,6 +93,24 @@ const gameUi = setupGameUi({
   onHelp: () => home.openHelp(),
 });
 
+const playModeUi = setupPlayModeUi({
+  onSolo: () => startGame({ resume: false }),
+  // TODO(room-flow): Replace these notices with the room feature callbacks.
+  onCreateRoom: () => playModeUi.setMessage('ルーム作成機能は準備中です。', 'info'),
+  onJoinRoom: () => playModeUi.setMessage('ルーム参加機能は準備中です。', 'info'),
+  onBack: () => {
+    playModeUi.hide();
+    home.show();
+    renderHome();
+  },
+  onSignOut: handleSignOut,
+});
+
+function showPlayMode() {
+  home.hide();
+  playModeUi.show(currentUser);
+}
+
 function authReason(auth, configured) {
   if (!auth) {
     return '認証モジュール（src/auth）はまだ接続されていません。ゲストで遊べます。';
@@ -127,18 +146,15 @@ async function boot() {
   const configured = Boolean(auth?.isAuthConfigured?.());
 
   try {
-    if (auth && save) {
-      currentUser = await auth.getCurrentUser();
+    currentUser = auth ? await auth.getCurrentUser() : null;
 
-      if (currentUser?.type === 'user') {
+    if (currentUser && save) {
+      if (currentUser.type === 'user') {
         progress = await save.claimGuestSave(currentUser);
-      } else if (currentUser) {
-        progress = await save.loadSave(currentUser);
       } else {
-        progress = save.createEmptyProgress();
+        progress = await save.loadSave(currentUser);
       }
     } else {
-      currentUser = null;
       progress = createEmptyProgress();
     }
   } catch (error) {
@@ -153,6 +169,8 @@ async function boot() {
     authReason: authReason(auth, configured),
     loading: false,
   });
+
+  if (currentUser?.type === 'user') showPlayMode();
 }
 
 async function handleGuest() {
@@ -204,6 +222,7 @@ async function handleSignOut() {
     await services.auth?.signOut?.();
     currentUser = null;
     progress = createEmptyProgress();
+    playModeUi.hide();
     renderHome();
     home.setMessage('ログアウトしました。', 'info');
   } catch (error) {
@@ -267,6 +286,7 @@ async function startGame({ resume = false } = {}) {
     });
 
     home.hide();
+    playModeUi.hide();
     gameUi.show({ user: currentUser });
     gameUi.setStageLabel(`stage ${String(scene.stage.number).padStart(2, '0')}`);
     canvas.focus({ preventScroll: true });

@@ -149,6 +149,54 @@
       </div>
     </div>
 
+    <main id="play-mode-screen" class="mode-screen" tabindex="-1" hidden>
+      <header class="site-header mode-header">
+        <button class="site-brand mode-back-button" type="button" id="mode-back-button" aria-label="ホームへ戻る">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span>SHORTCUT<br />DUNGEON</span>
+        </button>
+        <span class="mode-header-title">PLAY MODE / SELECT</span>
+        <div class="mode-account">
+          <span id="mode-user-badge" class="chip chip-user">ログイン中</span>
+          <button id="mode-sign-out-button" class="mode-sign-out" type="button">ログアウト</button>
+        </div>
+      </header>
+
+      <div class="mode-content">
+        <p class="mode-eyebrow">SYSTEM READY <span>— CHOOSE YOUR ROUTE</span></p>
+        <h1>どのモードで<br /><span>冒険しますか？</span></h1>
+        <p class="mode-intro">プレイ方法を選択してください。</p>
+
+        <div class="mode-options" aria-label="プレイ方法">
+          <button id="solo-play-button" class="mode-option mode-option-solo" type="button">
+            <span class="mode-option-index">01 / SOLO</span>
+            <span class="mode-option-icon" aria-hidden="true">⌁</span>
+            <strong>一人でプレイ</strong>
+            <small>ひとりで迷宮を攻略する</small>
+            <span class="mode-option-arrow" aria-hidden="true">→</span>
+          </button>
+
+          <!-- Room flow is intentionally isolated behind its own UI callback. -->
+          <button id="create-room-button" class="mode-option mode-option-create" type="button">
+            <span class="mode-option-index">02 / MULTI</span>
+            <span class="mode-option-icon" aria-hidden="true">＋</span>
+            <strong>ルームを作成</strong>
+            <small>部屋を作って友達を招待する</small>
+            <span class="mode-option-arrow" aria-hidden="true">↗</span>
+          </button>
+
+          <button id="join-room-button" class="mode-option mode-option-join" type="button">
+            <span class="mode-option-index">03 / MULTI</span>
+            <span class="mode-option-icon" aria-hidden="true">⌕</span>
+            <strong>ルームに参加</strong>
+            <small>招待コードで部屋に参加する</small>
+            <span class="mode-option-arrow" aria-hidden="true">↗</span>
+          </button>
+        </div>
+        <p id="play-mode-message" class="mode-message" role="status" aria-live="polite"></p>
+      </div>
+    </main>
+
     <main id="game-screen" class="game-shell" hidden>
       <section class="game-terminal" aria-label="ゲーム画面">
         <header class="game-bar">
