@@ -10,6 +10,8 @@
 import { setupHome } from './ui/home-ui.js';
 import { setupGameUi } from './ui/game-ui.js';
 import { setupPlayModeUi } from './ui/play-mode-ui.js';
+import { setupRoomUi } from './rooms/room-ui.js';
+import { setupRoomLobbyUi } from './rooms/room-lobby-ui.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -76,9 +78,31 @@ let services = { auth: null, save: null };
 let scene = null;
 let gameLoop = null;
 let gameModules = { scene: null, loop: null };
+let activeRoomCode = null;
+let startingGame = false;
 
 let saveChain = Promise.resolve();
 let pendingProgress = null;
+let playModeUi = null;
+
+const roomLobbyUi = setupRoomLobbyUi({
+  onClose: () => {
+    activeRoomCode = null;
+    playModeUi.show(currentUser);
+  },
+  onStart: ({ roomCode, stageId }) => {
+    startGame({ roomCode, stageId });
+  },
+});
+const roomUi = setupRoomUi({
+  onSuccess: ({ room }) => {
+    playModeUi.hide();
+    roomLobbyUi.open(room.room_code, {
+      currentUserId: currentUser?.id,
+      stageOptions: readStageMeta(),
+    });
+  },
+});
 
 const home = setupHome({
   onGuest: handleGuest,
@@ -89,15 +113,23 @@ const home = setupHome({
 });
 
 const gameUi = setupGameUi({
-  onBack: () => stopGame(),
+  onBack: () => {
+    if (!activeRoomCode) {
+      stopGame();
+      return;
+    }
+
+    const roomCode = activeRoomCode;
+    stopGame({ showHome: false });
+    roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
+  },
   onHelp: () => home.openHelp(),
 });
 
-const playModeUi = setupPlayModeUi({
+playModeUi = setupPlayModeUi({
   onSolo: () => startGame({ resume: false }),
-  // TODO(room-flow): Replace these notices with the room feature callbacks.
-  onCreateRoom: () => playModeUi.setMessage('ルーム作成機能は準備中です。', 'info'),
-  onJoinRoom: () => playModeUi.setMessage('ルーム参加機能は準備中です。', 'info'),
+  onCreateRoom: () => roomUi.open('create'),
+  onJoinRoom: () => roomUi.open('join'),
   onBack: () => {
     playModeUi.hide();
     home.show();
@@ -252,24 +284,40 @@ function getGameConstructors(modules) {
   };
 }
 
-async function startGame({ resume = false } = {}) {
-  if (scene) return;
+async function startGame({ resume = false, stageId = null, roomCode = null } = {}) {
+  if (scene || startingGame) return;
 
+  if (stageId && !readStageMeta().some((stage) => stage.id === stageId)) {
+    home.setMessage(`指定されたステージが見つかりません: ${stageId}`, 'error');
+    return;
+  }
+
+  startingGame = true;
   const modules = await loadGameModules();
   const { MainGameScene, GameLoop } = getGameConstructors(modules);
 
   if (!MainGameScene || !GameLoop) {
-    home.setMessage('ゲーム本体はまだ接続されていません。ホーム画面のみ表示中です。', 'warn');
+    if (roomCode) {
+      roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
+    } else {
+      home.setMessage('ゲーム本体はまだ接続されていません。ホーム画面のみ表示中です。', 'warn');
+    }
+    startingGame = false;
     return;
   }
 
   const canvas = document.getElementById('game-canvas');
-  if (!canvas) return;
+  if (!canvas) {
+    startingGame = false;
+    return;
+  }
 
   home.setBusy(true);
 
   try {
-    const initialProgress = resume ? progress : createEmptyProgress();
+    const initialProgress = stageId
+      ? { ...createEmptyProgress(), currentStageId: stageId }
+      : resume ? progress : createEmptyProgress();
 
     scene = new MainGameScene(canvas, {
       initialProgress,
@@ -279,6 +327,7 @@ async function startGame({ resume = false } = {}) {
         console.info('[gameover]', reason, stageId);
       },
     });
+    activeRoomCode = roomCode;
 
     gameLoop = new GameLoop({
       update: (dt) => scene.update(dt),
@@ -287,6 +336,7 @@ async function startGame({ resume = false } = {}) {
 
     home.hide();
     playModeUi.hide();
+    roomLobbyUi.close();
     gameUi.show({ user: currentUser });
     gameUi.setStageLabel(`stage ${String(scene.stage.number).padStart(2, '0')}`);
     canvas.focus({ preventScroll: true });
@@ -299,10 +349,16 @@ async function startGame({ resume = false } = {}) {
     scene?.dispose?.();
     scene = null;
     gameUi.hide();
-    home.show();
-    home.setMessage('ゲームを開始できませんでした。もう一度お試しください。', 'error');
+    activeRoomCode = null;
+    if (roomCode) {
+      roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
+    } else {
+      home.show();
+      home.setMessage('ゲームを開始できませんでした。もう一度お試しください。', 'error');
+    }
   } finally {
     home.setBusy(false);
+    startingGame = false;
   }
 }
 
