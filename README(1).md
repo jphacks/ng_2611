@@ -1,6 +1,6 @@
 # JPHACK 2026 当日開発用フォルダ
 
-4人が並行して作業するための開始構成です。実装物は担当フォルダ内に置き、共有部分を変更する場合は担当者間で先に相談してください。
+4人が並行して作業するための開始構成です。各担当フォルダ（`stage-editor/`、`auth-save/`、`game-player/`、`home-integration/`）はメモ・試作専用です。実装は最初から最終パス（`src/`、`packages/`、`editor/`、`styles/`、`index.html`）に置き、共有部分を変更する場合は担当者間で先に相談してください。
 
 ## 担当フォルダ
 
@@ -11,7 +11,7 @@
 - `shared/` — 全員で参照する仕様。直接変更する前に共有する
 - `docs/` — チームの進行・設計ドキュメント
 
-詳細な作業ルールは [docs/TEAM_RULES.md](docs/TEAM_RULES.md) を確認してください。
+詳細な作業ルールは [docs/TEAM_RULES.md](docs/TEAM_RULES.md)、具体的なタスクと受け渡しは [docs/WORK_BREAKDOWN.md](docs/WORK_BREAKDOWN.md) を確認してください。
 
 ## 開始方法
 

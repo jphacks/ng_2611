@@ -28,3 +28,30 @@ saveProgress(user, progress) // Promise<Progress>
 - ログインユーザーはSupabase `saves` テーブルへ `user_id` をキーとしてupsertする。
 - 保存なしの場合、`loadSave()` は空のProgressを返す。nullを返さない。
 - ネットワーク失敗はErrorとして呼び出し元へ伝えるが、UIはゲストプレイを継続可能にする。
+
+## 追加提案（Day 1 10:30 に全員で合意する）
+
+ホームの状態表示・ゲスト進捗の引き継ぎ・途中再開のために、次の追加を提案する。既存の関数は変更しない。
+
+```js
+// src/auth/auth.js
+isAuthConfigured()            // boolean。未設定ならGoogleボタンを無効化
+onAuthStateChange(callback)   // 解除関数を返す。ログイン/ログアウトの反映用
+
+// src/data/save/save-repository.js
+createEmptyProgress()         // Progress
+normalizeProgress(value)      // Progress
+mergeProgress(base, incoming) // クリアIDをunionする
+claimGuestSave(user)          // ゲスト進捗をクラウドへunionし、Progressを返す
+```
+
+```js
+// Progress に追加
+{ bossCleared: false }
+```
+
+- `bossCleared` は既存データにない場合 `false` として扱う。
+- `currentStageId` は「次に始めるステージ」。ボスクリア後は `null`。
+- `claimGuestSave()` はユーザー以外には何もせず、現在のProgressを返す。
+- ゲストセッションのキーは `shortcut-dungeon:guest-session:v1` とし、ゲスト保存データとは分ける。
+

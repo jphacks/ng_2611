@@ -5,6 +5,8 @@
 ## 実際の構成
 
 ```text
+index.html                    # ホーム画面とゲーム画面の骨格（須賀）
+styles/main.css               # 全画面のスタイル（須賀）
 src/
   main.js                    # Canvas生成・ゲームループ起動・ホーム接続
   core/GameLoop.js            # requestAnimationFrame と update/render
@@ -14,9 +16,16 @@ src/
   scenes/BossQuizScene.js     # 全ステージ後のキー入力クイズ
   data/stages.js              # import.meta.glob でJSONを収集・検証・順序化
   data/stages/*.json          # ステージデータ
-  ui/canvas-ui.js             # Canvas共通描画ヘルパー
+  data/save/                  # ゲスト/クラウドの進捗保存（白石）
+  auth/                       # Supabase認証（白石）
+  ui/canvas-ui.js             # Canvas共通描画ヘルパー（末田）
+  ui/home-ui.js               # ホームのDOM（須賀）
+  ui/game-ui.js               # ゲーム画面のDOM（須賀）
 packages/stage-schema/        # constants/validate をゲーム・エディタ・CLIで共有
 editor/                       # 独立Viteのステージエディタ
+scripts/validate-stages.mjs   # ステージJSONの一括検証
+tests/                        # node --test のテスト
+supabase/schema.sql           # savesテーブル・RLS
 ```
 
 ## 必ず守る依存方向
@@ -43,4 +52,5 @@ editor → stage-schema
 - 新しいステージフィールドと検証: `packages/stage-schema/`
 - 新しいギミックの状態・判定・描画: `scenes/MainGameScene.js`（大きくなったら専用モジュールへ抽出）
 - 新しい編集UI: `editor/src/`
-- ホームとログイン: `src/ui/home-ui.js` と `src/auth/`
+- ホームとログイン: `src/ui/home-ui.js`、`src/ui/game-ui.js`、`src/auth/`
+- 進捗保存: `src/data/save/`。ゲーム本体からSupabaseを直接呼ばない。

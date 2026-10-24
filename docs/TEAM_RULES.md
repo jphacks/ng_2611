@@ -9,7 +9,7 @@
 
 ## 競合を避けるルール
 
-- 起動処理、画面遷移、共通CSSは須賀が最終統合する。実体は最終的に `src/main.js` と `src/styles/` に置く。
+- 起動処理、画面遷移、共通CSSは須賀が最終統合する。実体は最終的に `src/main.js` と `styles/main.css` に置く。
 - ステージJSONの形式は白鳥が管理し、変更時は `shared/STAGE_FORMAT.md` を更新する。
 - 認証と保存は白石が提供する共通API経由で使う。ゲーム画面からSupabaseを直接呼ばない。
 - マスの見た目とゲームCanvas描画は末田が管理する。
@@ -29,5 +29,10 @@
 
 - ログインなしのゲストプレイができる。
 - ログイン済みならセーブ対象のユーザーIDを取得できる。
+- ステージクリア時に進捗が保存され、再読み込み後に「続きから」できる。
 - ステージJSONを編集側・プレイ側の両方で読める。
+- エディタで作成したJSONが `npm run validate:stages` を通る。
 - ホームからゲーム開始まで遷移できる。
+- ホームへ戻った後にキー入力が残らない。
+- `npm run validate:stages`、`npm test`、`npm run build`、`cd editor && npm run build` が通る。
+
