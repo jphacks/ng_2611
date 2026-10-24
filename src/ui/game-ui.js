@@ -53,7 +53,7 @@ export function setupGameUi({ onBack, onHelp } = {}) {
     }
 
     if (state === 'saved') {
-      saveStatus.textContent = `SAVED ${formatTime(at)}`;
+      saveStatus.textContent = message || `SAVED ${formatTime(at)}`;
       return;
     }
 
