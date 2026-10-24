@@ -46,7 +46,7 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
   let pollTimer = null;
   let generation = 0;
   let busy = false;
-  let refreshing = false;
+  let refreshRequest = 0;
   let handledStartAt = null;
   let currentRoom = null;
 
@@ -200,11 +200,11 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
   }
 
   async function refresh(expectedGeneration = generation) {
-    if (!roomCode || refreshing) return;
-    refreshing = true;
+    if (!roomCode) return;
+    const currentRequest = ++refreshRequest;
     try {
       const room = await getRoom(roomCode);
-      if (expectedGeneration !== generation || screen.hidden) return;
+      if (expectedGeneration !== generation || screen.hidden || currentRequest !== refreshRequest) return;
       roomId = room.id;
       currentRoom = room;
       leaveButton.textContent = room.created_by === userId ? 'ルームを終了' : '退出する';
@@ -212,7 +212,7 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
       renderMembers(room);
       setStatus('ルームは待機中です。参加者の変更は自動で反映されます。', 'success');
     } catch (error) {
-      if (expectedGeneration !== generation) return;
+      if (expectedGeneration !== generation || currentRequest !== refreshRequest) return;
       if (error.code === 'ROOM_NOT_FOUND') {
         close();
         onClose?.({ roomDeleted: true });
@@ -220,7 +220,7 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
       }
       setStatus(error.message || 'ルーム情報を取得できませんでした。', 'error');
     } finally {
-      refreshing = false;
+      if (currentRequest === refreshRequest) refreshButton.disabled = false;
     }
   }
 
@@ -266,11 +266,9 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
   }
 
   refreshButton.addEventListener('click', async () => {
-    if (refreshing) return;
     refreshButton.disabled = true;
     setStatus('最新のルーム情報を読み込んでいます…');
     await refresh();
-    if (!screen.hidden) refreshButton.disabled = false;
   });
   leaveButton.addEventListener('click', async () => {
     if (!roomCode || busy) return;

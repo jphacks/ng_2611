@@ -12,6 +12,7 @@ import { setupGameUi } from './ui/game-ui.js';
 import { setupPlayModeUi } from './ui/play-mode-ui.js';
 import { setupRoomUi } from './rooms/room-ui.js';
 import { setupRoomLobbyUi } from './rooms/room-lobby-ui.js';
+import { getRoom, subscribeToRoom } from './rooms/room-service.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -80,6 +81,9 @@ let gameLoop = null;
 let gameModules = { scene: null, loop: null };
 let activeRoomCode = null;
 let startingGame = false;
+let roomMonitorGeneration = 0;
+let roomMonitorUnsubscribe = null;
+let roomMonitorTimer = null;
 
 let saveChain = Promise.resolve();
 let pendingProgress = null;
@@ -121,6 +125,7 @@ const gameUi = setupGameUi({
     }
 
     const roomCode = activeRoomCode;
+    stopRoomMonitor();
     stopGame({ showHome: false });
     roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
   },
@@ -343,6 +348,7 @@ async function startGame({ resume = false, stageId = null, roomCode = null } = {
     canvas.focus({ preventScroll: true });
     scene.render();
     gameLoop.start();
+    if (roomCode) startRoomMonitor(roomCode);
   } catch (error) {
     console.error('[start]', error);
     gameLoop?.stop();
@@ -364,6 +370,7 @@ async function startGame({ resume = false, stageId = null, roomCode = null } = {
 }
 
 function stopGame({ showHome = true } = {}) {
+  stopRoomMonitor();
   gameLoop?.stop();
   gameLoop = null;
 
@@ -376,6 +383,84 @@ function stopGame({ showHome = true } = {}) {
     home.show();
     renderHome();
     home.focusPrimary();
+  }
+}
+
+function stopRoomMonitor() {
+  roomMonitorGeneration += 1;
+  roomMonitorUnsubscribe?.();
+  roomMonitorUnsubscribe = null;
+  if (roomMonitorTimer !== null) window.clearInterval(roomMonitorTimer);
+  roomMonitorTimer = null;
+}
+
+function returnHomeAfterRoomEnd(roomCode, { confirmedDeleted = false } = {}) {
+  if (activeRoomCode !== roomCode) return;
+
+  stopRoomMonitor();
+  activeRoomCode = null;
+  roomLobbyUi.close();
+  stopGame({ showHome: true });
+  home.setMessage(
+    confirmedDeleted
+      ? 'ホストがルームを解散しました。プレイを終了してホームに戻りました。'
+      : 'ルームまたは参加状態を確認できなくなったため、プレイを終了してホームに戻りました。',
+    'warn',
+  );
+}
+
+async function startRoomMonitor(roomCode) {
+  stopRoomMonitor();
+  const monitorGeneration = roomMonitorGeneration;
+
+  const checkRoomStillExists = async () => {
+    if (monitorGeneration !== roomMonitorGeneration || activeRoomCode !== roomCode) return;
+    try {
+      await getRoom(roomCode);
+    } catch (error) {
+      if (error.code === 'ROOM_NOT_FOUND') {
+        returnHomeAfterRoomEnd(roomCode);
+      } else {
+        console.warn('[room monitor] room status check failed', error);
+      }
+    }
+  };
+
+  try {
+    const room = await getRoom(roomCode);
+    if (monitorGeneration !== roomMonitorGeneration || activeRoomCode !== roomCode) return;
+    const unsubscribe = await subscribeToRoom(
+      room.id,
+      (payload) => {
+        if (payload?.table === 'rooms' && payload.eventType === 'DELETE') {
+          returnHomeAfterRoomEnd(roomCode, { confirmedDeleted: true });
+        } else if (payload?.eventType === 'DELETE') {
+          void checkRoomStillExists();
+        }
+      },
+      (status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`[room monitor] Realtime ${status}; periodic checks remain active`);
+        }
+      },
+      'game',
+    );
+
+    if (monitorGeneration !== roomMonitorGeneration || activeRoomCode !== roomCode) {
+      unsubscribe();
+      return;
+    }
+    roomMonitorUnsubscribe = unsubscribe;
+  } catch (error) {
+    if (error.code === 'ROOM_NOT_FOUND') {
+      returnHomeAfterRoomEnd(roomCode);
+      return;
+    }
+    console.warn('[room monitor] realtime setup failed; periodic checks remain active', error);
+  }
+
+  if (monitorGeneration === roomMonitorGeneration && activeRoomCode === roomCode) {
+    roomMonitorTimer = window.setInterval(checkRoomStillExists, 3000);
   }
 }
 

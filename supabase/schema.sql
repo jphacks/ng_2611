@@ -153,10 +153,11 @@ begin
     create policy "room_members_read_self_or_host"
       on public.room_members for select
       to authenticated
-      using (
-        user_id = (select auth.uid())
-        or (select private.is_room_host(room_id))
-      );
+      using ((select private.can_read_room(room_id)));
+  else
+    alter policy "room_members_read_self_or_host"
+      on public.room_members
+      using ((select private.can_read_room(room_id)));
   end if;
 end;
 $$;
