@@ -126,13 +126,13 @@ export async function getRoom(roomCode) {
 }
 
 /** Subscribe to room and member table changes. The returned function removes the channel. */
-export async function subscribeToRoom(roomId, onChange, onStatus = () => {}) {
+export async function subscribeToRoom(roomId, onChange, onStatus = () => {}, channelScope = 'lobby') {
   const { client } = await requireSignedInUser();
   if (!roomId) throw new TypeError('ルームIDを指定してください。');
   if (typeof onChange !== 'function') throw new TypeError('変更時のコールバックを指定してください。');
 
   const channel = client
-    .channel(`room-lobby-${roomId}`)
+    .channel(`room-${channelScope}-${roomId}`)
     .on('postgres_changes', {
       event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}`,
     }, onChange)
