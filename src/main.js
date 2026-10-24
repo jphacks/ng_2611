@@ -12,7 +12,7 @@ import { setupGameUi } from './ui/game-ui.js';
 import { setupPlayModeUi } from './ui/play-mode-ui.js';
 import { setupRoomUi } from './rooms/room-ui.js';
 import { setupRoomLobbyUi } from './rooms/room-lobby-ui.js';
-import { getRoom, subscribeToRoom } from './rooms/room-service.js';
+import { getCurrentRoom, getRoom, leaveRoom, subscribeToRoom } from './rooms/room-service.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -101,6 +101,7 @@ const roomLobbyUi = setupRoomLobbyUi({
 });
 const roomUi = setupRoomUi({
   onSuccess: ({ room }) => {
+    activeRoomCode = room.room_code;
     playModeUi.hide();
     roomLobbyUi.open(room.room_code, {
       currentUserId: currentUser?.id,
@@ -137,6 +138,13 @@ playModeUi = setupPlayModeUi({
   onCreateRoom: () => roomUi.open('create'),
   onJoinRoom: () => roomUi.open('join'),
   onBack: () => {
+    if (activeRoomCode) {
+      roomLobbyUi.open(activeRoomCode, {
+        currentUserId: currentUser?.id,
+        stageOptions: readStageMeta(),
+      });
+      return;
+    }
     playModeUi.hide();
     home.show();
     renderHome();
@@ -182,6 +190,7 @@ async function boot() {
   services = { auth, save };
 
   const configured = Boolean(auth?.isAuthConfigured?.());
+  let restoredRoom = null;
 
   try {
     currentUser = auth ? await auth.getCurrentUser() : null;
@@ -194,6 +203,15 @@ async function boot() {
       }
     } else {
       progress = createEmptyProgress();
+    }
+
+    if (currentUser?.type === 'user') {
+      try {
+        restoredRoom = await getCurrentRoom();
+        activeRoomCode = restoredRoom?.room_code ?? null;
+      } catch (roomError) {
+        console.warn('[boot] active room could not be restored', roomError);
+      }
     }
   } catch (error) {
     console.error('[boot]', error);
@@ -208,7 +226,15 @@ async function boot() {
     loading: false,
   });
 
-  if (currentUser?.type === 'user') showPlayMode();
+  if (restoredRoom) {
+    home.hide();
+    roomLobbyUi.open(restoredRoom.room_code, {
+      currentUserId: currentUser.id,
+      stageOptions: readStageMeta(),
+    });
+  } else if (currentUser?.type === 'user') {
+    showPlayMode();
+  }
 }
 
 async function handleGuest() {
@@ -257,6 +283,23 @@ async function handleSignOut() {
   home.setBusy(true);
 
   try {
+    if (activeRoomCode && currentUser?.type === 'user') {
+      try {
+        // leave_room deletes the room when the signed-in user is its creator.
+        await leaveRoom(activeRoomCode);
+      } catch (roomError) {
+        console.error('[signout] failed to leave active room', roomError);
+        const message = `ルームから退出できなかったため、ログアウトしていません。${roomError.message || ''}`;
+        playModeUi.setMessage(message, 'error');
+        home.setMessage(message, 'error');
+        return;
+      }
+
+      stopRoomMonitor();
+      roomLobbyUi.close();
+      activeRoomCode = null;
+    }
+
     await services.auth?.signOut?.();
     currentUser = null;
     progress = createEmptyProgress();
