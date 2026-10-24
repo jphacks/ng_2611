@@ -27,3 +27,35 @@ AIへ作業を依頼する時は、まずリポジトリ直下の [AGENTS.md](AG
 - [移動キー・入力仕様](docs/MOVEMENT_AND_INPUT.md)
 - [マス・ギミック仕様](docs/GIMMICKS.md)
 - [実装方針・ファイル構成](docs/IMPLEMENTATION_GUIDE.md)
+
+## Cloudflare Pages への公開
+
+ゲームは Cloudflare Pages の Git 連携でビルドします。`dist/` はコミットしません（`.gitignore` 済み）。
+
+| 項目 | 値 |
+|---|---|
+| Framework preset | Vite |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Node version | `.nvmrc` の `22` |
+
+環境変数（Production / Preview の両方に設定）:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+値は Cloudflare のダッシュボードにだけ置き、リポジトリへコミットしない。
+
+公開後にやること:
+
+- Supabase → Authentication → URL Configuration の Redirect URLs に `https://<project>.pages.dev/**` を追加する。
+- Google Cloud Console のリダイレクトURIは Supabase の callback（`https://<project-ref>.supabase.co/auth/v1/callback`）のままでよい。
+- エディタは別プロジェクト（Root directory: `editor`、Build: `npm ci && npm run build`、Output: `dist`）で公開する。
+
+`public/_headers` でキャッシュとセキュリティヘッダーを設定している。Vite が `dist/` 直下へコピーする。
+
+```bash
+npm run build
+npx wrangler pages deploy dist
+```
+

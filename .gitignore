@@ -4,5 +4,10 @@ dist/
 .DS_Store
 *.local
 .env.local
+
 editor/node_modules/
 editor/dist/
+
+# Cloudflare Pages / Wrangler
+.wrangler/
+.dev.vars
