@@ -1,0 +1,63 @@
+.room-entry-dialog {
+  width: min(92vw, 460px);
+  padding: 0;
+  border: 1px solid rgba(103, 174, 214, 0.5);
+  border-radius: 8px;
+  background: #0b1628;
+  color: #e9f6ff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.room-entry-dialog::backdrop { background: rgba(2, 7, 18, 0.78); backdrop-filter: blur(5px); }
+.room-entry-form { display: grid; gap: 16px; padding: 26px; }
+.room-entry-form h2 { margin: 0; font-size: 24px; }
+.room-entry-form p { margin: 0; color: #9bb2c8; line-height: 1.6; }
+.room-entry-field { display: grid; gap: 7px; color: #b7cadb; font-size: 13px; font-weight: 700; }
+.room-entry-field input { width: 100%; padding: 12px 13px; border: 1px solid rgba(103, 174, 214, 0.35); border-radius: 4px; background: #07101e; color: #f2f8ff; font: inherit; }
+.room-entry-field input:focus { outline: 2px solid #52f1cf; outline-offset: 2px; }
+.room-entry-field input::placeholder { color: #657c92; }
+.room-entry-message { min-height: 1.5em; color: #ffb6a8 !important; }
+.room-entry-message[data-tone="success"] { color: #7bffe1 !important; }
+.room-entry-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.room-entry-actions button { padding: 10px 15px; border: 1px solid rgba(103, 174, 214, 0.35); border-radius: 4px; background: transparent; color: #c7d8e7; font: inherit; font-weight: 700; cursor: pointer; }
+.room-entry-actions button[type="submit"] { border-color: #52f1cf; background: #52f1cf; color: #07101e; }
+.room-entry-actions button:disabled { opacity: 0.55; cursor: wait; }
+
+.room-lobby-screen { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; overflow: auto; padding: 24px; background: rgba(3, 8, 19, 0.96); color: #e9f6ff; }
+.room-lobby-screen[hidden] { display: none; }
+.room-lobby-card { width: min(100%, 760px); padding: clamp(22px, 5vw, 42px); border: 1px solid rgba(103, 174, 214, 0.4); border-radius: 8px; background: linear-gradient(145deg, #102039, #091323); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38); }
+.room-lobby-eyebrow { margin: 0 0 10px; color: #52f1cf; font: 700 11px var(--mono, monospace); letter-spacing: 0.14em; }
+.room-lobby-card h1 { margin: 0; font-size: clamp(26px, 5vw, 38px); }
+.room-lobby-code-label { margin: 24px 0 4px; color: #9bb2c8; font-size: 13px; }
+.room-lobby-code { margin: 0; color: #81d9ff; font: 800 clamp(38px, 8vw, 60px) var(--mono, monospace); letter-spacing: 0.14em; }
+.room-lobby-status { min-height: 1.5em; color: #a9bfd2; }
+.room-lobby-status[data-tone="success"] { color: #7bffe1; }
+.room-lobby-status[data-tone="error"] { color: #ffb6a8; }
+.room-lobby-stage-area, .room-lobby-members-area { margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(103, 174, 214, 0.2); }
+.room-lobby-members-area h2 { margin: 0 0 12px; font-size: 18px; }
+.room-lobby-current-stage { margin: 0 0 12px; color: #b7cadb; }
+.room-lobby-start-status { min-height: 1.5em; margin: 12px 0 0; color: #9bb2c8; }
+.room-lobby-start-status[data-tone="success"] { color: #7bffe1; }
+.room-lobby-start-status[data-tone="error"] { color: #ffb6a8; }
+.room-lobby-stage-form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.room-lobby-stage-form select, .room-lobby-stage-form button, .room-lobby-actions button { min-height: 42px; padding: 9px 13px; border: 1px solid rgba(103, 174, 214, 0.35); border-radius: 4px; background: #07101e; color: #e9f6ff; font: inherit; }
+.room-lobby-stage-form button { border-color: #52f1cf; background: #52f1cf; color: #07101e; font-weight: 800; cursor: pointer; }
+.room-lobby-start { display: block; width: 100%; min-height: 46px; margin-top: 14px; border: 1px solid #52f1cf; border-radius: 4px; background: #52f1cf; color: #07101e; font: inherit; font-weight: 850; cursor: pointer; }
+.room-lobby-start:disabled { opacity: 0.55; cursor: not-allowed; }
+.room-lobby-stage-result { color: #7bffe1; font-size: 13px; }
+.room-lobby-members { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.room-lobby-member { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 14px; border: 1px solid rgba(103, 174, 214, 0.18); border-radius: 4px; background: rgba(5, 13, 25, 0.55); }
+.room-lobby-member strong { min-width: 120px; }
+.room-lobby-member > span:not(.room-lobby-member-badge) { color: #9bb2c8; font-size: 13px; }
+.room-lobby-member-badge { margin-left: auto; padding: 4px 8px; border: 1px solid rgba(82, 241, 207, 0.35); border-radius: 3px; color: #7bffe1; font-size: 11px; }
+.room-lobby-empty { padding: 16px; color: #9bb2c8; }
+.room-lobby-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.room-lobby-actions button { cursor: pointer; font-weight: 700; }
+.room-lobby-actions .room-lobby-leave { border-color: rgba(255, 146, 127, 0.55); color: #ffb6a8; }
+@media (max-width: 520px) {
+  .room-lobby-screen { align-items: start; padding: 12px; }
+  .room-lobby-card { padding: 22px 18px; }
+  .room-lobby-member-badge { margin-left: 0; }
+  .room-lobby-actions { justify-content: stretch; }
+  .room-lobby-actions button { flex: 1; }
+}
