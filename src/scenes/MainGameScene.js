@@ -160,82 +160,221 @@ export default class MainGameScene {
       this.redo();
       return;
     }
+    if (action === 'selectAll') {
+      const selectableBlocks = this.getSelectableBlocks();
+      this.selectedBlockIds = new Set(selectableBlocks.map((block) => block.id));
+      this.lastShortcutMessage = selectableBlocks.length > 0
+        ? `操作可能な木箱を${selectableBlocks.length}個選択しました`
+        : '選択できる木箱がありません';
+      return;
+    }
 
     const target = this.getTargetTile();
-    const blockIndex = this.blocks.findIndex((block) => block.x === target.x && block.y === target.y);
-    const block = this.blocks[blockIndex];
+    const block = this.blocks.find((candidate) => candidate.x === target.x && candidate.y === target.y);
     const modifierLabel = modifier === 'Meta' ? 'Cmd' : 'Ctrl';
 
     if (action === 'copy' || action === 'cut') {
-      if (!block) {
+      const selectedBlocks = this.getSelectedBlocks();
+      const hasSelection = selectedBlocks.length > 0;
+      if (hasSelection && !selectedBlocks.some((selected) => selected.id === block?.id)) {
+        this.lastShortcutMessage = `${modifierLabel}+${action === 'copy' ? 'C' : 'X'}: 前方カーソルを選択中の木箱に合わせてください`;
+        return;
+      }
+      const operationBlocks = hasSelection ? selectedBlocks : (block ? [block] : []);
+      if (operationBlocks.length === 0) {
         this.lastShortcutMessage = `${modifierLabel}+${action === 'copy' ? 'C' : 'X'}: 前方に操作可能なブロックがありません`;
         return;
       }
-      if (block.waterFilled) { this.lastShortcutMessage = '水に置いた木箱は動かせません'; return; }
+      if (operationBlocks.some((candidate) => candidate.waterFilled)) {
+        this.lastShortcutMessage = '水に置いた木箱は動かせません';
+        return;
+      }
+
       this.recordUndo();
-      this.clipboard = { ...block };
+      const anchor = block;
+      this.clipboard = {
+        anchor: { x: anchor.x, y: anchor.y },
+        copyFacing: this.player.facing,
+        blocks: operationBlocks.map((candidate) => ({
+          ...candidate,
+          offsetX: candidate.x - anchor.x,
+          offsetY: candidate.y - anchor.y,
+        })),
+      };
       if (action === 'cut') {
-        this.blocks.splice(blockIndex, 1);
+        const removedIds = new Set(operationBlocks.map((candidate) => candidate.id));
+        this.blocks = this.blocks.filter((candidate) => !removedIds.has(candidate.id));
+        this.selectedBlockIds = new Set([...this.selectedBlockIds].filter((id) => !removedIds.has(id)));
         this.openColors = this.computeOpenColors();
         this.rebuildLaserBeams();
         if (this.checkPlayerLaserCollision()) return;
       }
       if (action === 'copy' && this.stage.shortcutGate) this.shortcutGateOpen = true;
-      const blockLabel = block.kind === 'colored' ? `色つき木箱「${block.name}」` : `「${block.name}」`;
+      const countLabel = operationBlocks.length > 1
+        ? `${operationBlocks.length}個の木箱`
+        : block.kind === 'colored'
+          ? `色つき木箱「${block.name}」`
+          : `「${block.name}」`;
       this.lastShortcutMessage = action === 'copy'
-        ? `${blockLabel}をコピーしました${this.shortcutGateOpen ? '。裏道ゲートが開きました' : ''}`
-        : `${blockLabel}を切り取りました`;
+        ? `${countLabel}をコピーしました${this.shortcutGateOpen ? '。裏道ゲートが開きました' : ''}`
+        : `${countLabel}を切り取りました`;
       return;
     }
 
     if (action === 'paste') {
-      if (!this.clipboard) {
+      const clipboard = this.cloneClipboard(this.clipboard);
+      if (!clipboard || clipboard.blocks.length === 0) {
         this.lastShortcutMessage = 'クリップボードにブロックがありません';
-        return;
-      }
-      if (!this.isEmptyFloor(target.x, target.y)) {
-        this.lastShortcutMessage = '前方が空きマスではないため配置できません';
         return;
       }
       if (this.player.skillEnergy <= 0) {
         this.lastShortcutMessage = 'スキルエナジーが不足しています。青いポーションを集めよう';
         return;
       }
-      const fillsWater = this.isWaterTile(target.x, target.y);
-      if (fillsWater && this.clipboard.kind !== 'normal') { this.lastShortcutMessage = '水場にはノーマル木箱だけ置けます'; return; }
+
+      const placements = clipboard.blocks.map((entry) => {
+        const offset = this.rotateOffset(
+          entry.offsetX,
+          entry.offsetY,
+          clipboard.copyFacing,
+          this.player.facing,
+        );
+        return {
+          entry,
+          x: target.x + offset.x,
+          y: target.y + offset.y,
+        };
+      });
+      const occupied = new Set();
+      for (const placement of placements) {
+        const key = `${placement.x},${placement.y}`;
+        if (this.isWallTile(placement.x, placement.y)) {
+          this.lastShortcutMessage = '貼り付け先に壁ブロックが重なるため、貼り付けできません';
+          return;
+        }
+        if (!this.isInsideBoard(placement.x, placement.y) || this.isFixedObstacle(placement.x, placement.y)) {
+          this.lastShortcutMessage = '貼り付ける範囲に通れない障害物があるため、貼り付けできません';
+          return;
+        }
+        if (occupied.has(key) || this.blocks.some((candidate) => candidate.x === placement.x && candidate.y === placement.y)) {
+          this.lastShortcutMessage = '貼り付ける範囲に別の木箱があるため、貼り付けできません';
+          return;
+        }
+        const playerTile = this.getPlayerTile();
+        if (placement.x === playerTile.x && placement.y === playerTile.y) {
+          this.lastShortcutMessage = 'プレイヤーのいるマスには貼り付けできません';
+          return;
+        }
+        if (this.isWaterTile(placement.x, placement.y) && placement.entry.kind !== 'normal') {
+          this.lastShortcutMessage = '水場にはノーマル木箱だけ置けます';
+          return;
+        }
+        occupied.add(key);
+      }
+
       this.recordUndo();
       this.player.skillEnergy -= 1;
-      this.blockIdSequence += 1;
-      this.blocks.push({
-        ...this.clipboard,
-        id: `block-${this.blockIdSequence}`,
-        x: target.x,
-        y: target.y,
-        waterFilled: fillsWater,
-      });
+      for (const placement of placements) {
+        const { offsetX, offsetY, ...blockData } = placement.entry;
+        const fillsWater = this.isWaterTile(placement.x, placement.y);
+        this.blockIdSequence += 1;
+        this.blocks.push({
+          ...blockData,
+          id: `block-${this.blockIdSequence}`,
+          x: placement.x,
+          y: placement.y,
+          waterFilled: fillsWater,
+        });
+      }
+      this.openColors = this.computeOpenColors();
       this.rebuildLaserBeams();
       if (this.checkPlayerLaserCollision()) return;
-      const switchTile = this.colorSwitches.find((colorSwitch) => (
-        colorSwitch.x === target.x && colorSwitch.y === target.y
-      ));
-      const isColored = this.clipboard.kind === 'colored';
-      const matchesSwitch = switchTile && isColored
-        && this.clipboard.color.toLowerCase() === switchTile.color.toLowerCase();
 
-      if (matchesSwitch) {
-        this.openColors = this.computeOpenColors();
-        this.lastShortcutMessage = `同じ色のスイッチに${this.clipboard.name}を置きました。カラー壁が開きました！`;
-      } else if (switchTile && isColored) {
-        this.lastShortcutMessage = `スイッチの色と木箱の色が違うため反応しません（${switchTile.color} / ${this.clipboard.color}）`;
-      } else if (switchTile) {
-        this.lastShortcutMessage = 'ノーマル木箱ではカラースイッチは反応しません';
+      const placedCount = placements.length;
+      const switchesUnderPaste = placements.map((placement) => ({
+        placement,
+        switchTile: this.colorSwitches.find((candidate) => (
+          candidate.x === placement.x && candidate.y === placement.y
+        )),
+      })).filter(({ switchTile }) => switchTile);
+      const matchingSwitch = switchesUnderPaste.some(({ placement, switchTile }) => (
+        placement.entry.kind === 'colored'
+        && placement.entry.color?.toLowerCase() === switchTile.color.toLowerCase()
+      ));
+      if (matchingSwitch) {
+        this.lastShortcutMessage = `${placedCount}個の木箱を配置し、同色のスイッチでカラー壁が開きました！`;
+      } else if (placedCount === 1 && switchesUnderPaste.length > 0) {
+        const { placement, switchTile } = switchesUnderPaste[0];
+        if (placement.entry.kind === 'colored') {
+          this.lastShortcutMessage = `スイッチの色と木箱の色が違うため反応しません（${switchTile.color} / ${placement.entry.color}）`;
+        } else {
+          this.lastShortcutMessage = 'ノーマル木箱ではカラースイッチは反応しません';
+        }
       } else {
-        this.lastShortcutMessage = `${this.clipboard.name}を前方に配置しました`;
+        this.lastShortcutMessage = placedCount === 1
+          ? `${placements[0].entry.name}を前方に配置しました`
+          : `${placedCount}個の木箱を前方に配置しました`;
       }
       return;
     }
 
     this.lastShortcutMessage = `${modifierLabel}+${action.toUpperCase()} はブロック操作ではありません`;
+  }
+
+  getSelectableBlocks() {
+    return this.blocks.filter((block) => !block.waterFilled);
+  }
+
+  getSelectedBlocks() {
+    const selectableIds = new Set(this.getSelectableBlocks().map((block) => block.id));
+    this.selectedBlockIds = new Set([...this.selectedBlockIds].filter((id) => selectableIds.has(id)));
+    return this.blocks.filter((block) => this.selectedBlockIds.has(block.id));
+  }
+
+  cloneClipboard(clipboard) {
+    if (!clipboard) return null;
+    if (Array.isArray(clipboard.blocks)) {
+      return {
+        anchor: { ...clipboard.anchor },
+        copyFacing: clipboard.copyFacing ?? 'right',
+        blocks: clipboard.blocks.map((block) => ({ ...block })),
+      };
+    }
+    return {
+      anchor: { x: clipboard.x, y: clipboard.y },
+      copyFacing: this.player?.facing ?? 'right',
+      blocks: [{ ...clipboard, offsetX: 0, offsetY: 0 }],
+    };
+  }
+
+  rotateOffset(offsetX, offsetY, sourceFacing, targetFacing) {
+    const facings = ['up', 'right', 'down', 'left'];
+    const sourceIndex = facings.indexOf(sourceFacing);
+    const targetIndex = facings.indexOf(targetFacing);
+    if (sourceIndex === -1 || targetIndex === -1) return { x: offsetX, y: offsetY };
+
+    let x = offsetX;
+    let y = offsetY;
+    const quarterTurns = (targetIndex - sourceIndex + facings.length) % facings.length;
+    for (let turn = 0; turn < quarterTurns; turn += 1) {
+      [x, y] = [-y, x];
+    }
+    return { x: x === 0 ? 0 : x, y: y === 0 ? 0 : y };
+  }
+
+  isInsideBoard(tileX, tileY) {
+    const columns = this.width / this.tileSize;
+    const rows = this.height / this.tileSize;
+    return tileX > 0 && tileY > 0 && tileX < columns - 1 && tileY < rows - 1;
+  }
+
+  isWallTile(tileX, tileY) {
+    return this.obstacles.some((obstacle) => (
+      tileX >= obstacle.x
+      && tileX < obstacle.x + obstacle.width
+      && tileY >= obstacle.y
+      && tileY < obstacle.y + obstacle.height
+    ));
   }
 
   getPlayerTile() {
@@ -263,6 +402,7 @@ export default class MainGameScene {
     this.goal = { ...stage.goal, radius: 19 };
     this.shortcutGateOpen = false;
     this.clipboard = null;
+    this.selectedBlockIds = new Set();
     this.undoStack = [];
     this.redoStack = [];
     this.laserBeamTiles = new Set();
@@ -325,7 +465,8 @@ export default class MainGameScene {
       y: this.player.y,
       facing: this.player.facing,
       blocks: this.blocks.map((block) => ({ ...block })),
-      clipboard: this.clipboard ? { ...this.clipboard } : null,
+      clipboard: this.cloneClipboard(this.clipboard),
+      selectedBlockIds: [...this.selectedBlockIds],
       shortcutGateOpen: this.shortcutGateOpen,
       openColors: [...this.openColors],
       skillEnergy: this.player.skillEnergy,
@@ -342,7 +483,9 @@ export default class MainGameScene {
       if (index >= 0) restoredBlocks[index] = { ...bridge }; else restoredBlocks.push({ ...bridge });
     }
     this.blocks = restoredBlocks;
-    this.clipboard = state.clipboard ? { ...state.clipboard } : null;
+    this.clipboard = this.cloneClipboard(state.clipboard);
+    const selectableIds = new Set(restoredBlocks.filter((block) => !block.waterFilled).map((block) => block.id));
+    this.selectedBlockIds = new Set((state.selectedBlockIds ?? []).filter((id) => selectableIds.has(id)));
     this.shortcutGateOpen = state.shortcutGateOpen;
     this.openColors = new Set(state.openColors);
     this.player.skillEnergy = state.skillEnergy;
@@ -1080,6 +1223,31 @@ const nextStage = this.stageManager.advance();
       ctx.lineWidth = colored ? 1.6 : 1.2;
       ctx.stroke();
 
+      if (this.selectedBlockIds.has(block.id)) {
+        ctx.save();
+        ctx.shadowColor = COLORS.unlocked;
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = '#8fffe0';
+        ctx.lineWidth = 2.2;
+        ctx.setLineDash([4, 2]);
+        roundedRectPath(ctx, x + 1.5, y + 1.5, this.tileSize - 3, this.tileSize - 3, 7);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.arc(x + this.tileSize - 7, y + 7, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#8fffe0';
+        ctx.fill();
+        ctx.strokeStyle = '#09201b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x + this.tileSize - 9.5, y + 7);
+        ctx.lineTo(x + this.tileSize - 7.5, y + 9);
+        ctx.lineTo(x + this.tileSize - 4, y + 4.5);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       ctx.fillStyle = 'rgba(255, 247, 233, 0.22)';
       ctx.fillRect(x + 9, y + 8, this.tileSize - 18, 3);
       ctx.fillStyle = 'rgba(38, 22, 12, 0.28)';
@@ -1309,9 +1477,13 @@ const nextStage = this.stageManager.advance();
     drawKeycap(ctx, 712, 33, 17, 17, 'C', { color: COLORS.unlocked });
     ctx.fillStyle = this.clipboard ? COLORS.text : COLORS.muted;
     ctx.font = '700 10.5px "Yu Gothic UI", sans-serif';
-    const clipboardLabel = this.clipboard
-      ? `${this.clipboard.kind === 'colored' ? '色:' : ''}${this.clipboard.name}`
-      : 'なし';
+    const clipboardCount = this.clipboard?.blocks?.length ?? 0;
+    const clipboardBlock = this.clipboard?.blocks?.[0];
+    const clipboardLabel = clipboardCount > 1
+      ? `${clipboardCount}個の木箱`
+      : clipboardBlock
+        ? `${clipboardBlock.kind === 'colored' ? '色:' : ''}${clipboardBlock.name}`
+        : 'なし';
     ctx.fillText(truncateText(ctx, clipboardLabel, 52), 735, 42);
   }
 
