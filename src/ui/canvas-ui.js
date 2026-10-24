@@ -1,10 +1,10 @@
 export const UI_COLORS = {
-  panel: 'rgba(9, 18, 25, 0.82)',
-  panelStrong: 'rgba(14, 28, 37, 0.94)',
-  panelStroke: 'rgba(157, 212, 208, 0.2)',
-  panelHighlight: 'rgba(255, 255, 255, 0.07)',
-  text: '#eff7f5',
-  muted: '#8fa7a6',
+  panel: 'rgba(16, 32, 42, 0.84)',
+  panelStrong: 'rgba(27, 52, 63, 0.95)',
+  panelStroke: 'rgba(171, 226, 219, 0.3)',
+  panelHighlight: 'rgba(255, 255, 255, 0.1)',
+  text: '#f2fffb',
+  muted: '#b8d3ce',
   accent: '#70e1c1',
   gold: '#f3c969',
   danger: '#ff6b74',
@@ -69,8 +69,8 @@ export function drawPanel(ctx, {
 
 export function drawKeycap(ctx, x, y, width, height, label, {
   color = UI_COLORS.text,
-  fill = 'rgba(18, 35, 45, 0.92)',
-  stroke = 'rgba(157, 212, 208, 0.24)',
+  fill = 'rgba(27, 50, 64, 0.92)',
+  stroke = 'rgba(171, 226, 219, 0.34)',
   fontSize = 10,
 } = {}) {
   drawPanel(ctx, { x, y, width, height, radius: 5, fill, stroke, lineWidth: 1 });

@@ -14,24 +14,25 @@ import {
 } from '../ui/canvas-ui.js';
 
 const COLORS = {
-  background: '#091118',
-  floor: '#16252f',
-  floorAlt: 'rgba(255, 255, 255, 0.018)',
-  grid: 'rgba(133, 176, 180, 0.06)',
-  wall: '#2a3f4a',
-  wallDark: '#1b2b35',
-  wallTop: '#5d7b84',
+  background: '#0c1822',
+  floor: '#1c303a',
+  floorAlt: 'rgba(230, 255, 248, 0.026)',
+  grid: 'rgba(150, 205, 198, 0.1)',
+  wall: '#35515b',
+  wallDark: '#243c46',
+  wallTop: '#7d9ea3',
   player: '#70e1c1',
-  playerOutline: '#d5fff2',
+  playerOutline: '#d9fff4',
   accent: '#f3c969',
-  skillPotion: '#4aa8ff',  locked: '#db7d59',
+  skillPotion: '#4aa8ff',
+  locked: '#db7d59',
   unlocked: '#70e1c1',
   laser: '#ff5e68',
   laserGlow: 'rgba(255, 94, 104, 0.42)',
   water: '#247eaa',
   waterGlow: 'rgba(73, 190, 232, 0.42)',
-  text: '#eff7f5',
-  muted: '#a7b9b8',
+  text: '#f2fffb',
+  muted: '#bfd8d2',
 };
 
 
@@ -675,14 +676,14 @@ export default class MainGameScene {
     if (!this.runCleared) return;
     const { width, height } = this;
     ctx.save();
-    ctx.fillStyle = 'rgba(4, 9, 13, 0.76)';
+    ctx.fillStyle = 'rgba(4, 12, 17, 0.68)';
     ctx.fillRect(0, 0, width, height);
     const panelWidth = 420;
     const panelHeight = 170;
     const panelX = (width - panelWidth) / 2;
     const panelY = (height - panelHeight) / 2;
     drawPanel(ctx, { x: panelX, y: panelY, width: panelWidth, height: panelHeight, radius: 18,
-      fill: 'rgba(18, 30, 39, 0.97)', stroke: 'rgba(112, 225, 193, 0.65)', lineWidth: 1.5,
+      fill: 'rgba(24, 49, 60, 0.97)', stroke: 'rgba(112, 225, 193, 0.65)', lineWidth: 1.5,
       shadowBlur: 26, shadowColor: 'rgba(112, 225, 193, 0.24)' });
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -701,7 +702,7 @@ export default class MainGameScene {
     if (!this.gameOver) return;
     const { width, height } = this;
     ctx.save();
-    ctx.fillStyle = 'rgba(4, 9, 13, 0.74)';
+    ctx.fillStyle = 'rgba(4, 12, 17, 0.66)';
     ctx.fillRect(0, 0, width, height);
 
     const panelWidth = 380;
@@ -714,7 +715,7 @@ export default class MainGameScene {
       width: panelWidth,
       height: panelHeight,
       radius: 18,
-      fill: 'rgba(18, 30, 39, 0.97)',
+      fill: 'rgba(24, 49, 60, 0.97)',
       stroke: 'rgba(255, 94, 104, 0.6)',
       lineWidth: 1.5,
       shadowBlur: 26,
@@ -742,15 +743,15 @@ export default class MainGameScene {
   drawBackground(ctx) {
     const { width, height } = this;
     const background = ctx.createLinearGradient(0, 0, 0, height);
-    background.addColorStop(0, '#0a141c');
+    background.addColorStop(0, '#0e1e29');
     background.addColorStop(0.55, COLORS.background);
-    background.addColorStop(1, '#0d1820');
+    background.addColorStop(1, '#102430');
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, width, height);
 
     const glow = ctx.createRadialGradient(width / 2, height * 0.44, 0, width / 2, height * 0.44, width * 0.55);
-    glow.addColorStop(0, 'rgba(65, 126, 124, 0.14)');
-    glow.addColorStop(0.6, 'rgba(30, 78, 84, 0.05)');
+    glow.addColorStop(0, 'rgba(96, 180, 168, 0.2)');
+    glow.addColorStop(0.6, 'rgba(40, 100, 98, 0.07)');
     glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, width, height);
@@ -874,9 +875,9 @@ export default class MainGameScene {
     const columns = width / tileSize;
     const rows = height / tileSize;
     const floorGradient = ctx.createLinearGradient(0, tileSize, 0, height - tileSize);
-    floorGradient.addColorStop(0, '#1a2d38');
+    floorGradient.addColorStop(0, '#223a45');
     floorGradient.addColorStop(0.5, COLORS.floor);
-    floorGradient.addColorStop(1, '#111e27');
+    floorGradient.addColorStop(1, '#172831');
     ctx.fillStyle = floorGradient;
     ctx.fillRect(tileSize, tileSize, width - tileSize * 2, height - tileSize * 2);
 
@@ -902,9 +903,9 @@ export default class MainGameScene {
     ctx.stroke();
 
     const wallGradient = ctx.createLinearGradient(0, 0, 0, height);
-    wallGradient.addColorStop(0, '#304650');
+    wallGradient.addColorStop(0, '#3a5a62');
     wallGradient.addColorStop(0.5, COLORS.wallDark);
-    wallGradient.addColorStop(1, '#22343e');
+    wallGradient.addColorStop(1, '#2b4650');
     ctx.fillStyle = wallGradient;
     ctx.fillRect(0, 0, width, tileSize);
     ctx.fillRect(0, height - tileSize, width, tileSize);
@@ -950,9 +951,9 @@ export default class MainGameScene {
       const width = obstacle.width * this.tileSize;
       const height = obstacle.height * this.tileSize;
       const gradient = ctx.createLinearGradient(0, y, 0, y + height);
-      gradient.addColorStop(0, '#405b65');
-      gradient.addColorStop(0.14, '#344b56');
-      gradient.addColorStop(1, '#1f313b');
+      gradient.addColorStop(0, '#4a6a74');
+      gradient.addColorStop(0.14, '#3d5864');
+      gradient.addColorStop(1, '#263b45');
 
       ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
@@ -963,11 +964,11 @@ export default class MainGameScene {
       ctx.fill();
       ctx.shadowColor = 'transparent';
 
-      ctx.strokeStyle = 'rgba(157, 190, 196, 0.2)';
+      ctx.strokeStyle = 'rgba(170, 208, 205, 0.28)';
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.09)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
       ctx.fillRect(x + 7, y + 7, width - 14, 4);
       ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
       ctx.fillRect(x + 7, y + height - 8, width - 14, 2);
@@ -1357,8 +1358,8 @@ export default class MainGameScene {
   drawHud(ctx) {
     ctx.save();
     const panelFill = ctx.createLinearGradient(0, 10, 0, 64);
-    panelFill.addColorStop(0, 'rgba(22, 41, 51, 0.94)');
-    panelFill.addColorStop(1, 'rgba(8, 17, 24, 0.88)');
+    panelFill.addColorStop(0, 'rgba(34, 61, 72, 0.95)');
+    panelFill.addColorStop(1, 'rgba(15, 33, 43, 0.9)');
     this.drawBrandPanel(ctx, panelFill);
     this.drawStagePanel(ctx, panelFill);
     this.drawStatusPanel(ctx, panelFill);
@@ -1517,8 +1518,8 @@ export default class MainGameScene {
       width: this.width - 104,
       height: 30,
       radius: 10,
-      fill: 'rgba(7, 15, 21, 0.94)',
-      stroke: 'rgba(157, 212, 208, 0.18)',
+      fill: 'rgba(18, 38, 48, 0.94)',
+      stroke: 'rgba(171, 226, 219, 0.26)',
       shadowBlur: 12,
       shadowOffsetY: 4,
     });

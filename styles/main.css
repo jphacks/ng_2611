@@ -2768,15 +2768,21 @@ body:has(#home-screen:not([hidden])) { background: #070b18; }
 .home-footer a { color: #9ab3ca; }
 
 .home-shell.has-scroll-reveal .reveal-item {
-  filter: blur(5px);
-  transform: translateY(30px) scale(0.985);
+  opacity: 0;
+  transform: translateY(48px) scale(0.96);
   transition:
-    opacity 760ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 760ms cubic-bezier(0.16, 1, 0.3, 1),
-    filter 760ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 800ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: transform, opacity;
 }
 
-.home-shell.has-scroll-reveal .reveal-item.is-visible { filter: blur(0); }
+.home-shell.has-scroll-reveal .reveal-item.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  will-change: auto;
+}
+
 .home-shell.has-scroll-reveal .control-card:hover,
 .home-shell.has-scroll-reveal .shortcut-card:hover { transform: translateY(-4px); }
 
@@ -4159,7 +4165,6 @@ body:has(#home-screen:not([hidden])) .site-nav a:hover::after {
   gap: clamp(24px, 3.4vw, 52px);
   min-height: 164px;
   padding: 30px clamp(26px, 3.5vw, 44px);
-  opacity: var(--card-alpha, 1);
 }
 
 .home-shell .shortcut-keys {
@@ -4243,4 +4248,298 @@ body:has(#home-screen:not([hidden])) .site-nav a:hover::after {
 .home-shell .shortcut-footnote {
   font-size: 13px;
   line-height: 2;
+}
+
+body:has(#home-screen:not([hidden])) {
+  color: #eafffb;
+  background:
+    radial-gradient(1400px 900px at 50% -10%, rgba(82, 192, 236, 0.34), transparent 64%),
+    radial-gradient(1000px 760px at 96% 18%, rgba(112, 225, 193, 0.2), transparent 68%),
+    radial-gradient(960px 740px at 2% 96%, rgba(137, 123, 255, 0.15), transparent 70%),
+    linear-gradient(180deg, #0e263c, #0a1b2e 56%, #081523);
+}
+
+body:has(#home-screen:not([hidden])) .home-shell {
+  --sf-cyan: #8cecff;
+  --sf-mint: #8ff5d9;
+  --sf-violet: #b9a8ff;
+  --sf-amber: #ffe1a1;
+  --sf-rose: #ff9eb0;
+  --text: #f4fffc;
+  --muted: #b8e4dc;
+  --dim: #9acfc7;
+  --line: rgba(143, 240, 214, 0.34);
+  --line-strong: rgba(143, 240, 214, 0.62);
+  color: #eafffb;
+  background:
+    radial-gradient(ellipse 60% 42% at 50% 0%, rgba(82, 184, 232, 0.34), transparent 66%),
+    radial-gradient(ellipse 46% 36% at 90% 26%, rgba(130, 112, 255, 0.16), transparent 70%),
+    radial-gradient(ellipse 58% 44% at 4% 78%, rgba(112, 225, 193, 0.17), transparent 72%),
+    linear-gradient(180deg, #143652 0%, #0f2a41 46%, #0b1e31 100%);
+}
+
+body:has(#home-screen:not([hidden])) .home-shell::after {
+  opacity: 0.38;
+}
+
+body:has(#home-screen:not([hidden])) .site-header {
+  border-bottom-color: rgba(143, 240, 214, 0.38);
+  background: linear-gradient(180deg, rgba(20, 51, 76, 0.96), rgba(11, 28, 46, 0.9));
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.32), inset 0 -1px 0 rgba(143, 240, 214, 0.14);
+}
+
+body:has(#home-screen:not([hidden])) .site-nav a {
+  color: #c9ece6;
+}
+
+body:has(#home-screen:not([hidden])) .site-brand {
+  color: #f4fffd;
+}
+
+.home-shell .section-eyebrow {
+  color: #9fe3d6;
+}
+
+.home-shell .section-eyebrow span:last-child {
+  color: #8ec6be;
+}
+
+.home-shell .wordmark-main {
+  filter: drop-shadow(0 0 34px rgba(143, 240, 214, 0.3));
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .home-shell .wordmark-main {
+    background-image: linear-gradient(
+      104deg,
+      #ffffff 0%,
+      #e9fffb 24%,
+      #b8f4ff 44%,
+      #8ff5d9 62%,
+      #ffffff 100%
+    );
+  }
+}
+
+.home-shell .wordmark-sub {
+  color: #c3ffef;
+  text-shadow:
+    -2px 0 rgba(255, 113, 135, 0.3),
+    2px 0 rgba(95, 231, 255, 0.36),
+    0 0 30px rgba(143, 240, 214, 0.44);
+}
+
+.home-shell .hero-tagline {
+  color: #f1fffb;
+  text-shadow: 0 0 18px rgba(143, 240, 214, 0.16);
+}
+
+.home-shell .hero-description {
+  color: #c4e8e1;
+}
+
+.home-shell .hero-metrics span {
+  color: #9bd8ce;
+}
+
+.home-shell .hero-metrics strong {
+  color: #e5fff9;
+}
+
+.home-shell .hero-metrics {
+  border-color: rgba(143, 240, 214, 0.28);
+}
+
+.home-shell .hero-board {
+  border-color: rgba(143, 220, 235, 0.5);
+  background: rgba(16, 38, 60, 0.88);
+  box-shadow: 0 0 42px rgba(82, 184, 232, 0.2), inset 0 0 24px rgba(143, 240, 214, 0.07);
+}
+
+.home-shell .board-cell {
+  border-color: rgba(143, 200, 225, 0.32);
+  background: rgba(39, 65, 92, 0.84);
+  color: #c8e6f5;
+}
+
+.home-shell .section-heading h2,
+.home-shell .play-heading h2 {
+  color: #f2fffc;
+  text-shadow: 0 0 22px rgba(143, 240, 214, 0.16);
+}
+
+.home-shell .section-heading > p:last-child,
+.home-shell .play-heading > p:not(.section-eyebrow):not(.progress-summary) {
+  color: #b5ded8;
+}
+
+.home-shell .control-card,
+.home-shell .shortcut-card {
+  border-color: rgba(143, 220, 235, 0.34);
+  background-image: linear-gradient(150deg, rgba(32, 74, 104, 0.92), rgba(15, 35, 55, 0.97));
+  color: #effffb;
+  box-shadow: inset 0 0 32px rgba(94, 196, 220, 0.07), 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.home-shell .control-card-blue,
+.home-shell .shortcut-blue {
+  background-image: linear-gradient(150deg, rgba(30, 78, 111, 0.94), rgba(15, 35, 55, 0.97));
+}
+
+.home-shell .control-card-yellow,
+.home-shell .shortcut-yellow {
+  background-image: linear-gradient(150deg, rgba(80, 64, 40, 0.9), rgba(15, 35, 55, 0.97));
+}
+
+.home-shell .control-card-green,
+.home-shell .shortcut-green {
+  background-image: linear-gradient(150deg, rgba(24, 80, 78, 0.9), rgba(15, 35, 55, 0.97));
+}
+
+.home-shell .shortcut-red {
+  background-image: linear-gradient(150deg, rgba(86, 42, 61, 0.9), rgba(15, 35, 55, 0.97));
+}
+
+.home-shell .shortcut-violet {
+  background-image: linear-gradient(150deg, rgba(64, 50, 104, 0.92), rgba(15, 35, 55, 0.97));
+}
+
+.home-shell .shortcut-sky {
+  background-image: linear-gradient(150deg, rgba(28, 64, 96, 0.92), rgba(15, 35, 55, 0.97));
+}
+
+.home-shell .control-card p,
+.home-shell .shortcut-card p,
+.home-shell .shortcut-footnote {
+  color: #bfe5de;
+}
+
+.home-shell .shortcut-card h3 {
+  color: #f4fffd;
+  text-shadow: 0 0 20px rgba(143, 240, 214, 0.18);
+}
+
+.home-shell .shortcut-keys kbd,
+.home-shell .shortcut-footnote kbd {
+  border-color: rgba(143, 220, 235, 0.55);
+  background: #143049;
+  color: #e1fbff;
+  box-shadow: 0 3px 0 #071522, 0 0 14px rgba(143, 240, 214, 0.12);
+}
+
+.home-shell .shortcut-keys b {
+  color: #a9d8d1;
+}
+
+.home-shell .keypad kbd {
+  border-color: rgba(143, 220, 235, 0.5);
+  background: #153552;
+  color: #c7f3ff;
+}
+
+.home-shell .play-section {
+  border-color: rgba(143, 240, 214, 0.46);
+  background-image: linear-gradient(150deg, rgba(23, 62, 86, 0.97), rgba(11, 25, 42, 0.99));
+  box-shadow: 0 0 60px rgba(143, 240, 214, 0.1), inset 0 0 50px rgba(143, 240, 214, 0.035);
+}
+
+.home-shell .choice {
+  border-color: rgba(135, 200, 230, 0.44);
+  background: rgba(20, 49, 72, 0.9);
+  color: #eafffb;
+}
+
+.home-shell .choice-text strong {
+  color: #f2fffc;
+}
+
+.home-shell .choice-text small {
+  color: #b3d8d2;
+}
+
+.home-shell .choice-arrow {
+  color: #9fd0ca;
+}
+
+.home-shell .selection-status {
+  color: #b7ddd7;
+}
+
+.home-footer {
+  border-top-color: rgba(143, 240, 214, 0.22);
+  color: #9ac3bd;
+}
+
+.home-footer a {
+  color: #c7ede7;
+}
+
+body:has(#play-mode-screen:not([hidden])) {
+  background: #0b1a2c;
+}
+
+.mode-screen {
+  color: #eafffb;
+  background:
+    radial-gradient(ellipse at 50% 26%, rgba(80, 184, 226, 0.26), transparent 56%),
+    linear-gradient(180deg, #132d46, #0c2034 70%, #0b1a2b);
+}
+
+.mode-header-title,
+.mode-sign-out {
+  color: #b6d8d2;
+}
+
+.mode-eyebrow {
+  color: #8ff5d9;
+}
+
+.mode-eyebrow span {
+  color: #9ac3bd;
+}
+
+body:has(#game-screen:not([hidden])) {
+  background: #081723;
+}
+
+.game-terminal {
+  border-color: rgba(143, 240, 214, 0.3);
+  background: linear-gradient(160deg, rgba(29, 66, 84, 0.97), rgba(10, 28, 41, 0.98));
+  box-shadow: 0 40px 110px rgba(0, 0, 0, 0.5), 0 0 90px rgba(112, 225, 193, 0.14);
+}
+
+.game-bar {
+  border-bottom-color: rgba(143, 240, 214, 0.26);
+  background: linear-gradient(180deg, rgba(28, 64, 84, 0.97), rgba(15, 38, 54, 0.96));
+}
+
+.bar-button {
+  border-color: rgba(143, 240, 214, 0.3);
+  background: rgba(25, 58, 76, 0.88);
+  color: #c7e9e4;
+}
+
+.canvas-frame {
+  border-color: rgba(143, 240, 214, 0.3);
+  background: #102838;
+  box-shadow: 0 0 46px rgba(112, 225, 193, 0.1), inset 0 0 28px rgba(112, 225, 193, 0.04);
+}
+
+.game-foot {
+  color: #b8ded8;
+}
+
+#game-canvas {
+  background: #0c1822;
+}
+
+.game-path {
+  color: #a9cfc9;
+}
+
+.footer-item kbd,
+.game-foot kbd {
+  border-color: rgba(143, 240, 214, 0.35);
+  background: rgba(37, 72, 92, 0.9);
+  color: #eafffb;
 }
