@@ -1,6 +1,13 @@
 import { getSupabaseClient } from '../auth/supabase-client.js';
 
 const ROOM_CODE_PATTERN = /^[0-9]{4}$/;
+export const ROOM_HEARTBEAT_INTERVAL_MS = 10_000;
+export const ROOM_OFFLINE_AFTER_MS = 30_000;
+
+export function isRoomMemberOffline(member, now = Date.now()) {
+  const lastSeenAt = Date.parse(member?.last_seen_at ?? '');
+  return !Number.isFinite(lastSeenAt) || now - lastSeenAt > ROOM_OFFLINE_AFTER_MS;
+}
 
 const ERROR_MESSAGES = {
   AUTH_REQUIRED: 'ルーム機能を使うには Google でログインしてください。',
@@ -118,7 +125,7 @@ export async function getRoom(roomCode) {
 
   const { data: members, error: membersError } = await client
     .from('room_members')
-    .select('user_id, display_name, current_stage_id, completed_stage_ids, is_playing, joined_at, left_at, kicked_at')
+    .select('user_id, display_name, current_stage_id, completed_stage_ids, is_playing, last_seen_at, joined_at, left_at, kicked_at')
     .eq('room_id', room.id)
     .order('joined_at', { ascending: true });
 
@@ -249,6 +256,11 @@ export async function setRoomPlaying(roomCode, isPlaying) {
     p_room_code: validateRoomCode(roomCode),
     p_is_playing: Boolean(isPlaying),
   });
+}
+
+export async function heartbeatRoom(roomCode) {
+  const { client } = await requireSignedInUser();
+  return callRpc(client, 'heartbeat_room', { p_room_code: validateRoomCode(roomCode) });
 }
 
 export async function updateRoomProgress(roomCode, { currentStageId = null, completedStageIds = [] } = {}) {

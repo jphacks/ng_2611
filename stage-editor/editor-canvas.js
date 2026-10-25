@@ -99,7 +99,6 @@ function applyTool(x, y) {
         entity.color = getSelectedColor();
     } else if (toolType === "laser") {
         entity.direction = getSelectedLaserDirection();
-        entity.length = 1;
     } else if (selectedTool.type === "item") {
         entity.itemType = toolType;
     }

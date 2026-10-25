@@ -233,7 +233,6 @@ export function setupHome({
   const userBadge = byId('user-badge');
   const progressSummary = byId('progress-summary');
   const stageList = byId('stage-progress');
-  const bossBadge = byId('boss-badge');
   const selectionStatus = byId('selection-status');
   const message = byId('home-message');
   const helpButton = byId('help-button');
@@ -314,8 +313,6 @@ export function setupHome({
         progressSummary.append(done, ` / ${items.length}`);
       }
     }
-
-    if (bossBadge) bossBadge.hidden = !hasCloudSave || !state.progress?.bossCleared;
     renderStages();
   }
 
@@ -324,7 +321,7 @@ export function setupHome({
 
     const user = state.user;
     if (user?.type === 'user') {
-      userBadge.textContent = user.displayName || user.email || 'SIGNED IN';
+      userBadge.textContent = user.displayName || user.email || 'ログイン中';
       userBadge.dataset.tone = 'user';
       return;
     }
@@ -347,7 +344,7 @@ export function setupHome({
 
     if (!state.authConfigured) {
       if (googleState) {
-        googleState.textContent = 'OFFLINE';
+        googleState.textContent = '利用できません';
         googleState.dataset.tone = 'off';
       }
       if (googleNote) {
@@ -360,7 +357,7 @@ export function setupHome({
 
     if (isUser) {
       if (googleState) {
-        googleState.textContent = 'SIGNED IN';
+        googleState.textContent = 'ログイン中';
         googleState.dataset.tone = 'active';
       }
       if (googleNote) googleNote.textContent = 'ログイン済みです。進捗はクラウドに保存されます。';
@@ -368,7 +365,7 @@ export function setupHome({
     }
 
     if (googleState) {
-      googleState.textContent = 'AVAILABLE';
+      googleState.textContent = '利用できます';
       googleState.dataset.tone = 'active';
     }
     if (googleNote) {
@@ -383,7 +380,7 @@ export function setupHome({
 
     if (guestState) {
       const active = state.user?.type === 'guest';
-      guestState.textContent = active ? 'ACTIVE' : 'STANDBY';
+      guestState.textContent = active ? '選択中' : '待機中';
       guestState.dataset.tone = active ? 'active' : 'none';
     }
 
@@ -410,12 +407,12 @@ export function setupHome({
     }
 
     if (state.user?.type === 'user') {
-      selectionStatus.textContent = 'ログイン中です。GAME START で開始できます。';
+      selectionStatus.textContent = 'ログイン中です。「ゲーム開始」を押すと遊べます。';
       return;
     }
 
     if (state.user?.type === 'guest') {
-      selectionStatus.textContent = 'ゲストでプレイします。GAME START で開始できます。';
+      selectionStatus.textContent = 'ゲストで遊びます。「ゲーム開始」を押してください。';
       return;
     }
 

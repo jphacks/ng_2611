@@ -68,6 +68,7 @@ create table if not exists public.room_members (
   current_stage_id text,
   completed_stage_ids text[] not null default '{}',
   is_playing boolean not null default false,
+  last_seen_at timestamptz not null default now(),
   joined_at timestamptz not null default now(),
   left_at timestamptz,
   kicked_at timestamptz,
@@ -88,6 +89,7 @@ create index if not exists room_members_room_id_idx
 alter table public.rooms enable row level security;
 alter table public.room_members enable row level security;
 alter table public.room_members add column if not exists is_playing boolean not null default false;
+alter table public.room_members add column if not exists last_seen_at timestamptz not null default now();
 
 revoke all on table public.rooms from anon, authenticated;
 revoke all on table public.room_members from anon, authenticated;
@@ -741,6 +743,29 @@ begin
 end;
 $$;
 
+create or replace function public.heartbeat_room(p_room_code text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_seen_at timestamptz := clock_timestamp();
+  v_room_id uuid;
+begin
+  if v_user_id is null then raise exception using errcode = '28000', message = 'AUTH_REQUIRED'; end if;
+  select room.id into v_room_id from public.rooms as room where room.room_code = p_room_code;
+  if v_room_id is null then raise exception using errcode = 'P0002', message = 'ROOM_NOT_FOUND'; end if;
+  update public.room_members as member
+  set last_seen_at = v_seen_at
+  where member.room_id = v_room_id and member.user_id = v_user_id
+    and member.left_at is null and member.kicked_at is null;
+  if not found then raise exception using errcode = '42501', message = 'ACTIVE_MEMBERSHIP_REQUIRED'; end if;
+  return jsonb_build_object('room_code', p_room_code, 'last_seen_at', v_seen_at);
+end;
+$$;
+
 create or replace function public.update_room_progress(
   p_room_code text,
   p_current_stage_id text,
@@ -819,6 +844,7 @@ revoke execute on function public.set_room_stages(text, text[]) from public, ano
 revoke execute on function public.start_room(text) from public, anon;
 revoke execute on function public.set_room_playing(text, boolean) from public, anon;
 revoke execute on function public.stop_room_game(text) from public, anon;
+revoke execute on function public.heartbeat_room(text) from public, anon;
 revoke execute on function public.update_room_progress(text, text, text[]) from public, anon;
 revoke execute on function public.delete_room(text) from public, anon;
 
@@ -833,6 +859,7 @@ grant execute on function public.set_room_stages(text, text[]) to authenticated;
 grant execute on function public.start_room(text) to authenticated;
 grant execute on function public.set_room_playing(text, boolean) to authenticated;
 grant execute on function public.stop_room_game(text) to authenticated;
+grant execute on function public.heartbeat_room(text) to authenticated;
 grant execute on function public.update_room_progress(text, text, text[]) to authenticated;
 grant execute on function public.delete_room(text) to authenticated;
 

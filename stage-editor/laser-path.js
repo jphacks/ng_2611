@@ -27,7 +27,7 @@ function initiallyOpenColorWalls(boardData) {
 function blocksLaser(boardData, x, y, openColors, source) {
     return boardData.entities.some((entity) => {
         if (entity.x !== x || entity.y !== y || entity === source) return false;
-        if (["wall", "door", "laser"].includes(entity.type)) return true;
+        if (["wall", "laser"].includes(entity.type)) return true;
         if (entity.type === "colorWall") {
             return !openColors.has(entity.color?.toLowerCase());
         }

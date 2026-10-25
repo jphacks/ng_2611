@@ -36,18 +36,18 @@ export function setupGameUi({ onBack, onHelp, onResume, onQuit } = {}) {
     if (!userBadge) return;
 
     if (user?.type === 'user') {
-      userBadge.textContent = user.displayName || user.email || 'SIGNED IN';
+      userBadge.textContent = user.displayName || user.email || 'ログイン中';
       userBadge.dataset.tone = 'user';
       return;
     }
 
     if (user?.type === 'guest') {
-      userBadge.textContent = 'GUEST SESSION';
+      userBadge.textContent = 'ゲスト';
       userBadge.dataset.tone = 'guest';
       return;
     }
 
-    userBadge.textContent = 'NO SESSION';
+    userBadge.textContent = '未ログイン';
     userBadge.dataset.tone = 'none';
   }
 
@@ -62,7 +62,7 @@ export function setupGameUi({ onBack, onHelp, onResume, onQuit } = {}) {
     }
 
     if (state === 'saved') {
-      saveStatus.textContent = message || `SAVED ${formatTime(at)}`;
+      saveStatus.textContent = message || `保存済み ${formatTime(at)}`;
       return;
     }
 
@@ -71,14 +71,14 @@ export function setupGameUi({ onBack, onHelp, onResume, onQuit } = {}) {
       return;
     }
 
-    saveStatus.textContent = message || 'SAVED --:--';
+    saveStatus.textContent = message || '保存済み --:--';
   }
 
   function setStageLabel(label) {
-    if (stageLabel) stageLabel.textContent = label || 'ready';
+    if (stageLabel) stageLabel.textContent = label || '準備完了';
   }
 
-  function setBackDisabled(disabled, label = disabled ? 'IN GAME' : 'HOME') {
+  function setBackDisabled(disabled, label = disabled ? 'プレイ中' : 'ホーム') {
     if (!backButton) return;
     backButton.disabled = Boolean(disabled);
     backButton.title = disabled ? 'ルーム参加中はプレイを続けてください。' : '';
@@ -92,9 +92,11 @@ export function setupGameUi({ onBack, onHelp, onResume, onQuit } = {}) {
     screen.hidden = false;
     setUser(user);
     if (label) setStageLabel(label);
-    setBackDisabled(backDisabled, backDisabled ? 'IN GAME' : 'HOME');
+    setBackDisabled(backDisabled, backDisabled ? 'プレイ中' : 'ホーム');
     if (pauseBgmVolume) pauseBgmVolume.value = String(audio.getBgmVolume());
     if (pauseSeVolume) pauseSeVolume.value = String(audio.getSeVolume());
+    if (pauseBgmValue) pauseBgmValue.value = `${Math.round(audio.getBgmVolume() * 100)}%`;
+    if (pauseSeValue) pauseSeValue.value = `${Math.round(audio.getSeVolume() * 100)}%`;
     if (pauseQuitButton) pauseQuitButton.hidden = backDisabled;
     if (pauseOverlay) pauseOverlay.hidden = true;
   }
@@ -131,4 +133,3 @@ export function setupGameUi({ onBack, onHelp, onResume, onQuit } = {}) {
     setPaused,
   };
 }
-

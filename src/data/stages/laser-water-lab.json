@@ -24,7 +24,7 @@
   ],
   "items": [
     {
-      "type": "skillPotion",
+      "type": "pastePotion",
       "x": 3,
       "y": 11
     }
@@ -53,8 +53,7 @@
     {
       "x": 17,
       "y": 3,
-      "direction": "down",
-      "length": 7
+      "direction": "down"
     }
   ],
   "water": [
@@ -75,6 +74,7 @@
     "x": 21,
     "y": 7
   },
-  "shortcutGate": null,
-  "hint": "水場にはノーマル木箱で橋を作ろう。レーザーに触れると即ゲームオーバー"
+  "hint": "水場にはノーマル木箱で橋を作ろう。レーザーに触れると即ゲームオーバー",
+  "initialPasteEnergy": 1,
+  "initialSelectAllEnergy": 0
 }
