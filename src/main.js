@@ -13,7 +13,7 @@ import { setupPlayModeUi } from './ui/play-mode-ui.js';
 import { setupRoomUi } from './rooms/room-ui.js';
 import { setupRoomLobbyUi } from './rooms/room-lobby-ui.js';
 import { buildHostDashboardSnapshot, setupHostDashboardUi } from './rooms/host-dashboard.js';
-import { deleteRoom, getCurrentRoom, getRoom, leaveRoom, setRoomPlaying, stopRoomGame, subscribeToRoom, updateRoomProgress } from './rooms/room-service.js';
+import { deleteRoom, getCurrentRoom, getRoom, heartbeatRoom, isRoomMemberOffline, leaveRoom, ROOM_HEARTBEAT_INTERVAL_MS, setRoomPlaying, stopRoomGame, subscribeToRoom, updateRoomProgress } from './rooms/room-service.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -91,6 +91,7 @@ let hostDashboardUnsubscribe = null;
 let hostDashboardTimer = null;
 let hostDashboardGeneration = 0;
 let finishingRoomSequence = false;
+let roomHeartbeatTimer = null;
 
 let saveChain = Promise.resolve();
 let pendingProgress = null;
@@ -102,6 +103,7 @@ const hostDashboardUi = setupHostDashboardUi({
     if (!window.confirm('このルームのプレイを終了し、全員を待機画面へ戻しますか？ルームは削除されません。')) return;
     await stopRoomGame(roomCode);
     stopHostDashboardMonitor();
+    stopRoomHeartbeat();
     hostDashboardUi.close();
     roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
   },
@@ -109,6 +111,7 @@ const hostDashboardUi = setupHostDashboardUi({
     if (!window.confirm(`ルーム ${roomCode} を終了しますか？参加者もルームから退出します。`)) return;
     await deleteRoom(roomCode);
     stopHostDashboardMonitor();
+    stopRoomHeartbeat();
     hostDashboardUi.close();
     activeRoomCode = null;
     playModeUi.show(currentUser);
@@ -225,7 +228,9 @@ function createHostDashboardSnapshotFromRoom(room) {
       const completedStageIds = member.completed_stage_ids ?? [];
       const clearedSequence = stages.length > 0
         && stages.every((stage) => completedStageIds.includes(stage.id));
-      const status = member.is_playing
+      const status = isRoomMemberOffline(member)
+        ? 'offline'
+        : member.is_playing
         ? 'playing'
         : clearedSequence
           ? 'cleared'
@@ -265,6 +270,7 @@ async function handleRoomStart({ roomCode, stageId }) {
       home.hide();
       playModeUi.hide();
       roomLobbyUi.close();
+      startRoomHeartbeat(roomCode);
       hostDashboardUi.open(createHostDashboardSnapshotFromRoom(room));
       startHostDashboardMonitor(roomCode, room.id);
       return;
@@ -291,6 +297,7 @@ function stopHostDashboardMonitor() {
 async function startHostDashboardMonitor(roomCode, roomId) {
   stopHostDashboardMonitor();
   const generation = hostDashboardGeneration;
+  let autoStoppingForOfflinePlayers = false;
 
   const refresh = async () => {
     if (generation !== hostDashboardGeneration || activeRoomCode !== roomCode) return;
@@ -299,21 +306,46 @@ async function startHostDashboardMonitor(roomCode, roomId) {
       if (generation !== hostDashboardGeneration || activeRoomCode !== roomCode) return;
       if (!room.started_at) {
         stopHostDashboardMonitor();
+        stopRoomHeartbeat();
         hostDashboardUi.close();
         roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
         return;
       }
       if (room.host_user_id !== currentUser?.id) {
         stopHostDashboardMonitor();
+        stopRoomHeartbeat();
         hostDashboardUi.close();
         roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
         return;
       }
       hostDashboardUi.update(createHostDashboardSnapshotFromRoom(room));
+
+      const playingMembers = (room.members ?? []).filter((member) => (
+        member.user_id !== room.host_user_id
+        && !member.left_at
+        && !member.kicked_at
+        && member.is_playing
+      ));
+      if (!autoStoppingForOfflinePlayers && playingMembers.length > 0
+        && playingMembers.every((member) => isRoomMemberOffline(member))) {
+        autoStoppingForOfflinePlayers = true;
+        try {
+          await stopRoomGame(roomCode);
+          if (generation !== hostDashboardGeneration || activeRoomCode !== roomCode) return;
+          stopHostDashboardMonitor();
+          stopRoomHeartbeat();
+          hostDashboardUi.close();
+          roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
+        } catch (stopError) {
+          autoStoppingForOfflinePlayers = false;
+          console.warn('[host dashboard] could not stop when all players were offline', stopError);
+        }
+      }
     } catch (error) {
       if (generation !== hostDashboardGeneration) return;
       if (error.code === 'ROOM_NOT_FOUND') {
         stopHostDashboardMonitor();
+        stopRoomHeartbeat();
         hostDashboardUi.close();
         activeRoomCode = null;
         playModeUi.show(currentUser);
@@ -337,6 +369,7 @@ async function startHostDashboardMonitor(roomCode, roomId) {
 
   if (generation === hostDashboardGeneration && activeRoomCode === roomCode) {
     hostDashboardTimer = window.setInterval(refresh, 5000);
+    void refresh();
   }
 }
 
@@ -481,6 +514,7 @@ async function handleSignOut() {
 
       stopRoomMonitor();
       stopHostDashboardMonitor();
+      stopRoomHeartbeat();
       hostDashboardUi.close();
       roomLobbyUi.close();
       activeRoomCode = null;
@@ -588,6 +622,7 @@ async function startGame({ resume = false, stageId = null, stageIds = null, room
       activeRoomProgress = initialProgress;
       await setRoomPlaying(roomCode, true);
       await updateRoomProgress(roomCode, activeRoomProgress);
+      startRoomHeartbeat(roomCode);
     }
 
     gameLoop = new GameLoop({
@@ -662,6 +697,7 @@ async function finishRoomStageSequence(roomCode, finalProgress) {
 
 function stopGame({ showHome = true } = {}) {
   stopRoomMonitor();
+  stopRoomHeartbeat();
   gameLoop?.stop();
   gameLoop = null;
 
@@ -676,6 +712,20 @@ function stopGame({ showHome = true } = {}) {
     renderHome();
     home.focusPrimary();
   }
+}
+
+function startRoomHeartbeat(roomCode) {
+  stopRoomHeartbeat();
+  const sendHeartbeat = () => heartbeatRoom(roomCode).catch((error) => {
+    console.warn('[room] heartbeat failed', error);
+  });
+  void sendHeartbeat();
+  roomHeartbeatTimer = window.setInterval(sendHeartbeat, ROOM_HEARTBEAT_INTERVAL_MS);
+}
+
+function stopRoomHeartbeat() {
+  if (roomHeartbeatTimer !== null) window.clearInterval(roomHeartbeatTimer);
+  roomHeartbeatTimer = null;
 }
 
 function stopRoomMonitor() {

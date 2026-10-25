@@ -230,8 +230,7 @@ function normalizeStages(value, totalStages) {
       id: stage?.id != null ? String(stage.id) : `stage-${index + 1}`,
       number: positiveNumber(stage?.number) || index + 1,
       title: asText(stage?.title ?? stage?.name),
-    }))
-    .sort((a, b) => a.number - b.number);
+    }));
 
   if (stages.length > 0) return stages;
 
