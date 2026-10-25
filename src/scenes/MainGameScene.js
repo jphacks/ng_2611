@@ -39,7 +39,7 @@ const COLORS = {
 
 /** 1画面のCanvasダンジョンとプレイヤー操作を管理します。 */
 export default class MainGameScene {
-  constructor(canvas, { initialProgress, onProgress, onStageChange } = {}) {
+  constructor(canvas, { initialProgress, onProgress, onStageChange, onPauseChange } = {}) {
     if (!(canvas instanceof HTMLCanvasElement)) {
       throw new TypeError('MainGameSceneにはCanvas要素を指定してください。');
     }
@@ -56,6 +56,8 @@ export default class MainGameScene {
     this.completedStageIds = new Set(initialProgress?.completedStageIds ?? []);
     this.onProgress = onProgress;
     this.onStageChange = onStageChange;
+    this.onPauseChange = onPauseChange;
+    this.paused = false;
 
     const savedStageIndex = STAGES.findIndex((stage) => stage.id === initialProgress?.currentStageId);
     if (savedStageIndex >= 0) this.stageManager.index = savedStageIndex;
@@ -80,6 +82,7 @@ export default class MainGameScene {
     this.input = new InputHandler({
       onMove: (direction, pressed) => this.handleMove(direction, pressed),
       onShortcut: (shortcut) => this.handleShortcut(shortcut),
+      onEscape: () => this.togglePause(),
     });
     this.input.attach(canvas);
     this.gameOver = false;
@@ -87,6 +90,13 @@ export default class MainGameScene {
     this.gameOverReason = '';
     this.canvas.addEventListener('click', this.focusCanvas);
     audio.startBgm();
+  }
+
+  togglePause() {
+    if (this.gameOver || this.runCleared) return;
+    this.paused = !this.paused;
+    this.input.setEnabled(!this.paused);
+    this.onPauseChange?.(this.paused);
   }
 
   handleRetryKeyDown = (event) => {

@@ -283,7 +283,6 @@
         <span class="mode-header-title">PLAY MODE / SELECT</span>
         <div class="mode-account">
           <span id="mode-user-badge" class="chip chip-user">ログイン中</span>
-          <button id="mode-sign-out-button" class="mode-sign-out" type="button">ログアウト</button>
         </div>
       </header>
 
@@ -318,6 +317,7 @@
             <span class="mode-option-arrow" aria-hidden="true">↗</span>
           </button>
         </div>
+        <button id="mode-sign-out-button" class="mode-sign-out mode-sign-out-wide" type="button">ログアウト</button>
         <p id="play-mode-message" class="mode-message" role="status" aria-live="polite"></p>
       </div>
     </main>
@@ -356,6 +356,22 @@
           <span class="footer-item"><kbd>Ctrl + C / V / X / Z</kbd>ショートカット</span>
           <span class="footer-item"><kbd>Enter / R</kbd>リトライ</span>
         </footer>
+      </section>
+      <section id="pause-overlay" class="pause-overlay" aria-labelledby="pause-title" hidden>
+        <div class="pause-panel">
+          <p class="pause-eyebrow">GAME PAUSED</p>
+          <h2 id="pause-title">一時停止</h2>
+          <label class="pause-volume-control" for="pause-bgm-volume">
+            <span>BGM 音量</span><output id="pause-bgm-volume-value" for="pause-bgm-volume">32%</output>
+            <input id="pause-bgm-volume" type="range" min="0" max="1" step="0.01" />
+          </label>
+          <label class="pause-volume-control" for="pause-se-volume">
+            <span>効果音 音量</span><output id="pause-se-volume-value" for="pause-se-volume">55%</output>
+            <input id="pause-se-volume" type="range" min="0" max="1" step="0.01" />
+          </label>
+          <button id="pause-resume-button" class="start-button" type="button">ゲームに戻る</button>
+          <button id="pause-quit-button" class="bar-button pause-quit-button" type="button">ゲームをやめる</button>
+        </div>
       </section>
     </main>
 

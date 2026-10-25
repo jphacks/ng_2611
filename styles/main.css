@@ -2843,6 +2843,19 @@ body:has(#play-mode-screen:not([hidden])) {
 .mode-option-join .mode-option-arrow { color: #c2a8ff; }
 .mode-message { min-height: 24px; margin: 24px 0 0; color: #8fa6bc; font-size: 13px; font-weight: 650; }
 .mode-message[data-tone="info"] { color: #8ef8dd; }
+.mode-sign-out-wide {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 20px;
+  border: 1px solid rgba(118, 166, 202, 0.4);
+  border-radius: 4px;
+  background: rgba(10, 24, 42, 0.72);
+  color: #b6d8d2;
+  font: 700 12px var(--mono);
+  cursor: pointer;
+}
+.mode-sign-out-wide:hover { border-color: #52f1cf; color: #eafffb; }
 
 @media (max-width: 760px) {
   .mode-options { grid-template-columns: 1fr; }
@@ -4543,6 +4556,36 @@ body:has(#game-screen:not([hidden])) {
   background: rgba(37, 72, 92, 0.9);
   color: #eafffb;
 }
+
+/* --- Pause overlay ------------------------------------------------------ */
+.pause-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 12, 20, 0.82);
+  backdrop-filter: blur(7px);
+}
+.pause-overlay[hidden] { display: none; }
+.pause-panel {
+  width: min(100%, 420px);
+  padding: 32px;
+  border: 1px solid rgba(143, 240, 214, 0.45);
+  border-radius: 8px;
+  background: #10232e;
+  color: #eafffb;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
+}
+.pause-eyebrow { margin: 0 0 8px; color: #70e1c1; font: 700 11px var(--mono); letter-spacing: .15em; }
+.pause-panel h2 { margin: 0 0 24px; font-size: 28px; }
+.pause-volume-control { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; margin: 18px 0; }
+.pause-volume-control output { color: #70e1c1; font: 700 13px var(--mono); }
+.pause-volume-control input { grid-column: 1 / -1; width: 100%; accent-color: #70e1c1; }
+.pause-panel .start-button { width: 100%; justify-content: center; margin-top: 12px; }
+.pause-quit-button { width: 100%; justify-content: center; margin-top: 12px; }
+.pause-quit-button[hidden] { display: none; }
 
 /* --- BGM オン / オフ（ホーム画面） --------------------------------------- */
 .audio-control {
