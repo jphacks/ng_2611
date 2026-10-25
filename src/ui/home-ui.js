@@ -2,6 +2,7 @@
  * ホーム画面のDOMだけを扱います。
  * 認証・保存・ゲームの呼び出しは `src/main.js` が担当し、ここではコールバックを呼ぶだけです。
  */
+import { audio } from '../core/AudioManager.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -32,8 +33,186 @@ function buildStageItems(stages, total) {
   return Array.from({ length: total || STAGE_TOTAL_FALLBACK }, (_, index) => ({
     id: `stage-${index + 1}`,
     number: index + 1,
-    title: `ステージ ${index + 1}`,
+    title: 'STAGE',
   }));
+}
+
+function setupScrollReveal(shell) {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!('IntersectionObserver' in window) || reduceMotion) return;
+
+  const targets = [...shell.querySelectorAll(
+    '.section-heading, .control-card, .shortcut-card, .shortcut-footnote, .play-heading, .play-panel',
+  )];
+  if (!targets.length) return;
+
+  targets.forEach((element) => {
+    const groupSelector = element.matches('.control-card')
+      ? '.control-card'
+      : element.matches('.shortcut-card')
+        ? '.shortcut-card'
+        : null;
+    const siblings = groupSelector
+      ? [...element.parentElement.children].filter((child) => child.matches(groupSelector))
+      : [];
+    const index = siblings.indexOf(element);
+    element.style.setProperty('--reveal-delay', `${Math.min(Math.max(index, 0), 2) * 80}ms`);
+    element.classList.add('reveal-item');
+  });
+
+  shell.classList.add('has-scroll-reveal');
+  const observer = new IntersectionObserver((entries, activeObserver) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      activeObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.15 });
+
+  targets.forEach((element) => observer.observe(element));
+}
+
+function setupTitleReveal(shell) {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!('IntersectionObserver' in window) || reduceMotion) return;
+
+  const targets = [...shell.querySelectorAll(
+    '.wordmark, .section-heading h2, .play-heading h2',
+  )];
+  if (!targets.length) return;
+
+  targets.forEach((element) => {
+    element.classList.add('title-reveal');
+    if (element.matches('.section-heading h2, .play-heading h2')) {
+      const accent = element.querySelector('span');
+      if (accent) accent.classList.add('title-reveal-accent');
+    }
+  });
+
+  shell.classList.add('has-title-reveal');
+
+  const play = (element, activeObserver) => {
+    if (element.classList.contains('is-playing')) return;
+    element.classList.add('is-playing');
+    activeObserver?.unobserve(element);
+  };
+
+  const observer = new IntersectionObserver((entries, activeObserver) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      play(entry.target, activeObserver);
+    });
+  }, { threshold: 0.3, rootMargin: '0px 0px -10% 0px' });
+
+  const playVisible = () => {
+    targets.forEach((element) => {
+      const rect = element.getBoundingClientRect();
+      const visible = rect.top < window.innerHeight * 0.9 && rect.bottom > 0;
+      if (visible) play(element, observer);
+    });
+  };
+
+  targets.forEach((element) => observer.observe(element));
+
+  if (document.readyState === 'complete') {
+    setTimeout(playVisible, 0);
+  } else {
+    window.addEventListener('load', playVisible, { once: true });
+  }
+}
+
+function setupAmbientMotion(shell) {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const heroArt = shell.querySelector('.hero-art');
+  const header = shell.querySelector('.site-header');
+  const shortcutScenes = [...shell.querySelectorAll('.shortcut-scene')];
+
+  if (!reduceMotion && heroArt) {
+    const finePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+    if (finePointer) {
+      let frame = 0;
+      let targetX = 0;
+      let targetY = 0;
+      let currentX = 0;
+      let currentY = 0;
+
+      const paint = () => {
+        frame = 0;
+        currentX += (targetX - currentX) * 0.14;
+        currentY += (targetY - currentY) * 0.14;
+        heroArt.style.setProperty('--px', currentX.toFixed(3));
+        heroArt.style.setProperty('--py', currentY.toFixed(3));
+        if (Math.abs(targetX - currentX) > 0.002 || Math.abs(targetY - currentY) > 0.002) {
+          frame = requestAnimationFrame(paint);
+        }
+      };
+
+      const request = () => {
+        if (!frame) frame = requestAnimationFrame(paint);
+      };
+
+      heroArt.addEventListener('pointermove', (event) => {
+        const rect = heroArt.getBoundingClientRect();
+        targetX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+        targetY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+        request();
+      });
+
+      heroArt.addEventListener('pointerleave', () => {
+        targetX = 0;
+        targetY = 0;
+        request();
+      });
+    }
+
+    shell.querySelectorAll('.control-card, .shortcut-card, .play-section').forEach((card) => {
+      card.addEventListener('pointermove', (event) => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--gx', `${event.clientX - rect.left}px`);
+        card.style.setProperty('--gy', `${event.clientY - rect.top}px`);
+      });
+    });
+  }
+
+  const clamp01 = (value) => Math.min(Math.max(value, 0), 1);
+  const easeOutCubic = (value) => 1 - (1 - value) ** 3;
+
+  let ticking = false;
+  const updateScroll = () => {
+    ticking = false;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = max > 0 ? Math.min(Math.max(window.scrollY / max, 0), 1) : 0;
+    shell.style.setProperty('--scroll', progress.toFixed(4));
+    header?.classList.toggle('is-scrolled', window.scrollY > 12);
+
+    const viewport = window.innerHeight;
+    const start = viewport * 0.95;
+    const span = Math.max(viewport * 0.62, 1);
+
+    shortcutScenes.forEach((scene) => {
+      const rect = scene.getBoundingClientRect();
+      const anchor = rect.top + rect.height * 0.35;
+      const sceneProgress = clamp01((start - anchor) / span);
+      const approach = easeOutCubic(clamp01(sceneProgress / 0.62));
+      const copy = clamp01((sceneProgress - 0.42) / 0.3);
+      const paste = clamp01((sceneProgress - 0.66) / 0.3);
+
+      scene.style.setProperty('--p', sceneProgress.toFixed(3));
+      scene.style.setProperty('--approach', approach.toFixed(3));
+      scene.style.setProperty('--copy', copy.toFixed(3));
+      scene.style.setProperty('--paste', paste.toFixed(3));
+    });
+  };
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(updateScroll);
+  };
+
+  updateScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
 }
 
 export function setupHome({
@@ -59,10 +238,15 @@ export function setupHome({
   const helpButton = byId('help-button');
   const helpDialog = byId('help-dialog');
   const helpCloseButton = byId('help-close-button');
+  const bgmToggleButton = byId('bgm-toggle-button');
 
   if (!shell || !googleButton || !guestButton || !startButton) {
     throw new Error('ホーム画面の要素が見つかりません。');
   }
+
+  setupScrollReveal(shell);
+  setupTitleReveal(shell);
+  setupAmbientMotion(shell);
 
   const googleState = googleButton.querySelector('.choice-state');
   const guestState = guestButton.querySelector('.choice-state');
@@ -116,16 +300,19 @@ export function setupHome({
     const items = buildStageItems(state.stages, state.totalStages);
     const cleared = new Set(state.progress?.completedStageIds ?? []);
     const clearedCount = items.filter((stage) => cleared.has(stage.id)).length;
+    const hasCloudSave = state.user?.type === 'user';
 
     if (progressSummary) {
+      progressSummary.hidden = !hasCloudSave;
       progressSummary.replaceChildren();
-      progressSummary.append('クリア ');
-      const done = document.createElement('span');
-      done.className = 'sum-done';
-      done.textContent = String(clearedCount);
-      progressSummary.append(done, ` / ${items.length} ステージ`);
+      if (hasCloudSave) {
+        progressSummary.append('クリア ');
+        const done = document.createElement('span');
+        done.className = 'sum-done';
+        done.textContent = String(clearedCount);
+        progressSummary.append(done, ` / ${items.length}`);
+      }
     }
-
     renderStages();
   }
 
@@ -145,7 +332,7 @@ export function setupHome({
       return;
     }
 
-    userBadge.textContent = '未選択';
+    userBadge.textContent = '未ログイン';
     userBadge.dataset.tone = 'none';
   }
 
@@ -157,7 +344,7 @@ export function setupHome({
 
     if (!state.authConfigured) {
       if (googleState) {
-        googleState.textContent = '未設定';
+        googleState.textContent = '利用できません';
         googleState.dataset.tone = 'off';
       }
       if (googleNote) {
@@ -215,7 +402,7 @@ export function setupHome({
     if (!selectionStatus) return;
 
     if (state.loading) {
-      selectionStatus.textContent = 'ログイン状態を確認しています…';
+      selectionStatus.textContent = 'セッションを確認しています…';
       return;
     }
 
@@ -229,7 +416,24 @@ export function setupHome({
       return;
     }
 
-    selectionStatus.textContent = 'ログイン方法を選んでください。';
+    selectionStatus.textContent = 'プレイ方法を選択してください。';
+  }
+
+  function renderAudioToggle() {
+    if (!bgmToggleButton) return;
+
+    const enabled = audio.isBgmEnabled();
+    bgmToggleButton.setAttribute('aria-pressed', String(enabled));
+    bgmToggleButton.dataset.state = enabled ? 'on' : 'off';
+
+    const stateLabel = bgmToggleButton.querySelector('.audio-toggle-state');
+    if (stateLabel) stateLabel.textContent = enabled ? 'ON' : 'OFF';
+
+    bgmToggleButton.setAttribute(
+      'aria-label',
+      `BGM（音楽）は${enabled ? 'オン' : 'オフ'}。押すと${enabled ? 'オフ' : 'オン'}にします`,
+    );
+    bgmToggleButton.title = enabled ? 'BGM をオフにする' : 'BGM をオンにする';
   }
 
   function paint() {
@@ -241,6 +445,7 @@ export function setupHome({
     renderGuest();
     renderStatus();
     renderProgress();
+    renderAudioToggle();
   }
 
   function render(next = {}) {
@@ -318,6 +523,11 @@ export function setupHome({
 
   helpButton?.addEventListener('click', openHelp);
   helpCloseButton?.addEventListener('click', closeHelp);
+
+  bgmToggleButton?.addEventListener('click', () => {
+    audio.toggleBgm();
+    renderAudioToggle();
+  });
 
   helpDialog?.addEventListener('click', (event) => {
     if (event.target === helpDialog) closeHelp();

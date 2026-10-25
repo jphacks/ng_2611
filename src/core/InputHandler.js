@@ -28,11 +28,13 @@ export default class InputHandler {
   constructor({
     onShortcut = () => {},
     onMove = () => {},
+    onEscape = () => {},
     platform = InputHandler.getPlatform(),
     shortcuts = SHORTCUT_ACTIONS,
   } = {}) {
     this.onShortcut = onShortcut;
     this.onMove = onMove;
+    this.onEscape = onEscape;
     this.platform = platform;
     this.shortcuts = { ...shortcuts };
     this.enabled = true;
@@ -76,6 +78,11 @@ export default class InputHandler {
   }
 
   handleKeyDown(event) {
+    if (event.key === 'Escape' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.repeat) {
+      event.preventDefault();
+      this.onEscape(event);
+      return;
+    }
     if (!this.enabled) return;
 
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;

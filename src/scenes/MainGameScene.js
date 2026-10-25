@@ -1,3 +1,4 @@
+import { audio } from '../core/AudioManager.js';
 import InputHandler from '../core/InputHandler.js';
 import StageManager from '../core/StageManager.js';
 import STAGES from '../data/stages.js';
@@ -40,7 +41,15 @@ const COLORS = {
 
 /** 1画面のCanvasダンジョンとプレイヤー操作を管理します。 */
 export default class MainGameScene {
-  constructor(canvas) {
+  constructor(canvas, {
+    initialProgress,
+    stageIds,
+    roomMode = false,
+    onProgress,
+    onStageChange,
+    onPauseChange,
+    onGameOver,
+  } = {}) {
     if (!(canvas instanceof HTMLCanvasElement)) {
       throw new TypeError('MainGameSceneにはCanvas要素を指定してください。');
     }
@@ -53,7 +62,27 @@ export default class MainGameScene {
     this.height = canvas.height;
     this.tileSize = 40;
     this.elapsed = 0;
-    this.stageManager = new StageManager(STAGES);
+    const selectedStages = Array.isArray(stageIds) && stageIds.length
+      ? stageIds.map((id) => STAGES.find((stage) => stage.id === id)).filter(Boolean)
+      : STAGES;
+    if (selectedStages.length === 0 || (Array.isArray(stageIds) && selectedStages.length !== stageIds.length)) {
+      throw new TypeError('プレイするステージの指定が正しくありません。');
+    }
+    this.stageIds = selectedStages.map((stage) => stage.id);
+    this.roomMode = Boolean(roomMode);
+    this.stageManager = new StageManager(selectedStages);
+    this.completedStageIds = new Set(initialProgress?.completedStageIds ?? []);
+    this.onProgress = onProgress;
+    this.onStageChange = onStageChange;
+    this.onPauseChange = onPauseChange;
+    this.onGameOver = onGameOver;
+    this.paused = false;
+    const savedStageIndex = selectedStages.findIndex((stage) => stage.id === initialProgress?.currentStageId);
+    if (savedStageIndex >= 0) this.stageManager.index = savedStageIndex;
+    else {
+      const nextStageIndex = selectedStages.findIndex((stage) => !this.completedStageIds.has(stage.id));
+      if (nextStageIndex >= 0) this.stageManager.index = nextStageIndex;
+    }
     this.stage = this.stageManager.current;
     this.player = {
       x: (this.stage.start.x + 0.5) * this.tileSize,
@@ -65,17 +94,28 @@ export default class MainGameScene {
     };
     this.inventory = { pastePotion: 0, selectAllPotion: 0 };
     this.loadStage(this.stage);
+    this.onStageChange?.(this.stage);
     this.lastShortcutMessage = '矢印キー / WASD で1マスずつ移動しよう';
 
     this.input = new InputHandler({
       onMove: (direction, pressed) => this.handleMove(direction, pressed),
       onShortcut: (shortcut) => this.handleShortcut(shortcut),
+      onEscape: () => this.togglePause(),
     });
-    this.input.attach(canvas);
+    this.input.attach(window);
     this.gameOver = false;
     this.runCleared = false;
     this.gameOverReason = '';
     this.canvas.addEventListener('click', this.focusCanvas);
+    audio.startBgm();
+  }
+
+  togglePause() {
+    if (this.gameOver || this.runCleared) return;
+    this.paused = !this.paused;
+    this.input.setEnabled(!this.paused);
+    this.onPauseChange?.(this.paused);
+    if (!this.paused) this.canvas.focus({ preventScroll: true });
   }
 
   handleRetryKeyDown = (event) => {
@@ -88,6 +128,7 @@ export default class MainGameScene {
       this.rewindAfterDeath();
       return;
     }
+    if (this.paused) return;
     if (key !== 'enter' && key !== 'r') return;
     event.preventDefault();
     event.stopPropagation();
@@ -132,12 +173,14 @@ export default class MainGameScene {
     const nextY = tile.y + offset.y;
     if (!this.canOccupy(nextX, nextY)) {
       this.lastShortcutMessage = 'そのマスには進めません';
+      audio.playSe('error');
       return;
     }
 
     this.recordUndo();
     this.player.x = (nextX + 0.5) * this.tileSize;
     this.player.y = (nextY + 0.5) * this.tileSize;
+    audio.playSe('move');
     this.collectNearbyItems();
     if (this.applyHazards(nextX, nextY)) return;
     this.checkGoal();
@@ -165,6 +208,8 @@ export default class MainGameScene {
     this.input.setEnabled(false);
     this.gameOverReason = reason;
     this.lastShortcutMessage = `${reason} Ctrl/Cmd+Zで一手戻す / Rで再挑戦`;
+    this.onGameOver?.({ reason, stageId: this.stage.id });
+    audio.playSe('error');
     window.addEventListener('keydown', this.handleRetryKeyDown);
   }
 
@@ -201,6 +246,7 @@ export default class MainGameScene {
       this.player.selectAllEnergy -= 1;
       this.selectedBlockIds = new Set(selectableBlocks.map((block) => block.id));
       this.lastShortcutMessage = `操作可能な木箱を${selectableBlocks.length}個選択しました`;
+      this.playShortcutSound(action);
       return;
     }
 
@@ -252,6 +298,7 @@ export default class MainGameScene {
       this.lastShortcutMessage = action === 'copy'
         ? `${countLabel}をコピーしました`
         : `${countLabel}を切り取りました`;
+      this.playShortcutSound(action);
       return;
     }
 
@@ -349,10 +396,17 @@ export default class MainGameScene {
           ? `${placements[0].entry.name}を前方に配置しました`
           : `${placedCount}個の木箱を前方に配置しました`;
       }
+      this.playShortcutSound('paste');
       return;
     }
 
     this.lastShortcutMessage = `${modifierLabel}+${action.toUpperCase()} はこのゲームでは使いません`;
+  }
+
+  playShortcutSound(action) {
+    const sounds = { copy: 'ctrlC', cut: 'ctrlX', paste: 'ctrlV', undo: 'ctrlZ', redo: 'ctrlY', selectAll: 'ctrlA' };
+    const sound = sounds[action];
+    if (sound) audio.playSe(sound);
   }
 
   getSelectableBlocks() {
@@ -545,6 +599,7 @@ export default class MainGameScene {
     if (this.gameOver) return;
     this.openColors = this.computeOpenColors();
     this.lastShortcutMessage = '一手前にもどしました';
+    this.playShortcutSound('undo');
   }
 
   redo() {
@@ -557,6 +612,7 @@ export default class MainGameScene {
     if (this.gameOver) return;
     this.openColors = this.computeOpenColors();
     this.lastShortcutMessage = '操作をやりなおしました';
+    this.playShortcutSound('redo');
   }
 
   computeOpenColors() {
@@ -636,16 +692,24 @@ export default class MainGameScene {
   checkGoal() {
     const tile = this.getPlayerTile();
     if (tile.x !== this.goal.x || tile.y !== this.goal.y) return;
-const nextStage = this.stageManager.advance();
+
+    this.completedStageIds.add(this.stage.id);
+    const nextStage = this.stageManager.advance();
     if (nextStage) {
       this.loadStage(nextStage);
+      this.onProgress?.({ completedStageIds: [...this.completedStageIds], currentStageId: nextStage.id });
+      this.onStageChange?.(nextStage);
       this.lastShortcutMessage = `ステージ${nextStage.number}開始：${nextStage.name}`;
       return;
     }
 
     this.runCleared = true;
-    this.lastShortcutMessage = '全ステージクリア！ R / Enter で最初から';
-    window.addEventListener('keydown', this.handleRetryKeyDown);
+    this.onProgress?.({ completedStageIds: [...this.completedStageIds], currentStageId: null });
+    this.lastShortcutMessage = this.roomMode
+      ? '選択ステージをすべてクリア！待機画面に戻ります…'
+      : '全ステージクリア！ R / Enter で最初から';
+    this.input.setEnabled(false);
+    if (!this.roomMode) window.addEventListener('keydown', this.handleRetryKeyDown);
   }
 
   resetRun() {
@@ -1577,6 +1641,7 @@ const nextStage = this.stageManager.advance();
     window.removeEventListener('keydown', this.handleRetryKeyDown);
     this.input.detach();
     this.canvas.removeEventListener('click', this.focusCanvas);
+    audio.stopBgm();
   }
 }
 

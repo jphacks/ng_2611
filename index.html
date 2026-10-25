@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#04080f" />
+    <meta name="theme-color" content="#05080f" />
     <meta
       name="description"
       content="キーボードショートカットでダンジョンを攻略する2Dパズルゲーム。"
@@ -15,152 +15,309 @@
   <body>
     <div class="world" aria-hidden="true">
       <div class="world-grid"></div>
+      <div class="world-depth"></div>
       <div class="world-glow"></div>
       <div class="world-scan"></div>
+      <div class="world-motes"></div>
+      <div class="world-rings world-rings-left"></div>
+      <div class="world-rings world-rings-right"></div>
+      <span class="floating-key floating-key-one">Ctrl + C</span>
+      <span class="floating-key floating-key-two">↑</span>
+      <span class="floating-key floating-key-three">Ctrl + V</span>
+      <span class="floating-key floating-key-four">← →</span>
+      <span class="floating-key floating-key-small floating-key-five">Ctrl + X</span>
+      <span class="floating-key floating-key-small floating-key-six">Ctrl + Z</span>
+      <span class="floating-key floating-key-ghost floating-key-seven">Ctrl + Y</span>
+      <span class="floating-key floating-key-ghost floating-key-eight">Ctrl + A</span>
+      <span class="floating-key floating-key-small floating-key-nine">Ctrl + S</span>
+      <span class="floating-key floating-key-small floating-key-ten">Ctrl + F</span>
+      <span class="floating-key floating-key-ghost floating-key-eleven">Shift</span>
+      <span class="floating-key floating-key-ghost floating-key-twelve">Enter</span>
+      <span class="floating-key floating-key-small floating-key-thirteen">Esc</span>
+      <span class="floating-key floating-key-small floating-key-fourteen">Tab</span>
+      <span class="floating-key floating-key-ghost floating-key-fifteen">↑ ↓</span>
+      <span class="floating-key floating-key-ghost floating-key-sixteen">Ctrl + R</span>
+      <div class="world-ticker world-ticker-left">
+        <div class="world-ticker-track">
+          <span class="world-ticker-group">
+            <b>CTRL + C</b><b>CTRL + V</b><b>CTRL + X</b><b>CTRL + Z</b>
+            <b>CTRL + Y</b><b>CTRL + A</b><b>SHIFT</b><b>ENTER</b>
+          </span>
+          <span class="world-ticker-group">
+            <b>CTRL + C</b><b>CTRL + V</b><b>CTRL + X</b><b>CTRL + Z</b>
+            <b>CTRL + Y</b><b>CTRL + A</b><b>SHIFT</b><b>ENTER</b>
+          </span>
+        </div>
+      </div>
+      <div class="world-ticker world-ticker-right">
+        <div class="world-ticker-track">
+          <span class="world-ticker-group">
+            <b>PASTE</b><b>COPY</b><b>CUT</b><b>UNDO</b>
+            <b>REDO</b><b>SELECT ALL</b><b>ARROWS</b><b>WASD</b>
+          </span>
+          <span class="world-ticker-group">
+            <b>PASTE</b><b>COPY</b><b>CUT</b><b>UNDO</b>
+            <b>REDO</b><b>SELECT ALL</b><b>ARROWS</b><b>WASD</b>
+          </span>
+        </div>
+      </div>
     </div>
 
-    <main id="home-screen" class="home-shell">
-      <section class="terminal" aria-labelledby="home-title">
-        <header class="terminal-bar">
-          <div class="terminal-dots" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </div>
-          <p class="terminal-path">
-            operator@shortcut-dungeon:<span>~</span>
-          </p>
-          <div class="terminal-bar-right">
-            <span class="chip chip-live">あんぜんモード</span>
-            <span id="user-badge" class="chip chip-user" data-tone="none">未選択</span>
-          </div>
-        </header>
+    <div id="home-screen" class="home-shell">
+      <div class="shortcut-field" aria-hidden="true">
+        <span class="bg-key bg-key-ctrl">Ctrl</span>
+        <span class="bg-key bg-key-c">C</span>
+        <span class="bg-key bg-key-v">V</span>
+        <span class="bg-key bg-key-x">X</span>
+        <span class="bg-key bg-key-z">Z</span>
+        <span class="bg-key bg-key-arrow">↑↓←→</span>
 
-        <div class="terminal-body">
-          <div class="terminal-main">
-            <p class="eyebrow">
-              <span class="eyebrow-dot" aria-hidden="true"></span>
-              [ じゅんびOK ] キーボードであそぼう
-            </p>
-
-            <h1 id="home-title" class="wordmark" aria-label="ショートカット・ダンジョン">
-              <span class="wordmark-main" aria-hidden="true">SHORTCUT</span>
-              <span class="wordmark-sep" aria-hidden="true">://</span>
-              <span class="wordmark-sub" aria-hidden="true">DUNGEON</span>
-            </h1>
-
-            <p class="home-kicker">コピー・貼り付け・切り取りで、迷宮を書き換えろ。</p>
-            <p class="home-lead">
-              ショートカットを使って木箱を動かし、色のかべを開けたり閉めたり、
-              レーザーをよけてゴールを目指そう。遊びながらパソコンの操作を学べるよ。
-            </p>
-
-            <p class="prompt-line" aria-hidden="true">
-              <span class="prompt-mark">ゲスト</span>:<span class="prompt-path">~/はじめる</span>$
-              <span class="prompt-cmd">あそびかたをえらぶ</span><span class="caret"></span>
-            </p>
-
-            <div class="login-options" aria-label="プレイ方法を選択">
-              <button
-                id="google-login-button"
-                class="choice choice-google"
-                type="button"
-                disabled
-                aria-describedby="google-note"
-              >
-                <span class="choice-icon" aria-hidden="true">G</span>
-                <span class="choice-text">
-                  <strong>Google でログイン</strong>
-                  <small>クリアしたところを保存 / ほかの端末でも続きから</small>
-                </span>
-                <span class="choice-state" data-tone="none">未設定</span>
-              </button>
-              <p id="google-note" class="option-note">
-                Supabase が未設定のため、現在 Google ログインは利用できません。
-              </p>
-
-              <button
-                id="guest-play-button"
-                class="choice choice-guest"
-                type="button"
-                aria-pressed="false"
-              >
-                <span class="choice-icon" aria-hidden="true">&gt;_</span>
-                <span class="choice-text">
-                  <strong>ゲストでプレイ</strong>
-                  <small>登録なしでOK / 進みぐあいはこのブラウザに保存</small>
-                </span>
-                <span class="choice-state" data-tone="none">待機中</span>
-              </button>
-              <p class="option-note">すぐに遊べます。あとからGoogleと連携することもできます。</p>
-            </div>
-
-            <div class="actions">
-              <button id="start-game-button" class="start-button" type="button" disabled>
-                <span class="start-label">ゲーム開始</span>
-                <span class="start-arrow" aria-hidden="true">▸</span>
-              </button>
-              <button id="resume-game-button" class="resume-button" type="button" hidden >
-                つづきから
-              </button>
-              <button id="sign-out-button" class="ghost-button" type="button" hidden >
-                ログアウト
-              </button>
-              <button id="help-button" class="ghost-button" type="button">あそびかた</button>
-            </div>
-
-            <p id="selection-status" class="selection-status" aria-live="polite">
-              セッションを選択してください。
-            </p>
-            <p id="home-message" class="home-message" role="status"></p>
-
-            <ul class="feature-strip">
-              <li><span>ステージ</span>05</li>
-              <li><span>操作</span>キーボード</li>
-              <li><span>保存</span>自動</li>
-              <li><span>遊び方</span>ローカル</li>
-            </ul>
-          </div>
-
-          <aside class="terminal-side" aria-label="システム情報">
-            <section class="panel">
-              <h2>すすみぐあい</h2>
-              <p id="progress-summary" class="progress-summary">クリア 0 / 5</p>
-              <ul id="stage-progress" class="stage-list"></ul>
-            </section>
-
-            <section class="panel">
-              <h2>キーそうさ</h2>
-              <ul class="keymap">
-                <li><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd><span>うごく</span></li>
-                <li><kbd>Ctrl</kbd><kbd>C</kbd><span>コピー</span></li>
-                <li><kbd>Ctrl</kbd><kbd>V</kbd><span>はる</span></li>
-                <li><kbd>Ctrl</kbd><kbd>X</kbd><span>きりとる</span></li>
-                <li><kbd>Ctrl</kbd><kbd>Z</kbd><span>もどす</span></li>
-                <li><kbd>R</kbd><kbd>Enter</kbd><span>やりなおす</span></li>
-              </ul>
-            </section>
-
-            <section class="panel panel-feed">
-              <h2>ゲームのじょうたい</h2>
-              <ul class="sys-log" aria-hidden="true">
-                <li>キーボードのじゅんびOK</li>
-                <li>コピーした木箱はありません</li>
-                <li>ステージを読みこみました</li>
-                <li>キー入力をまっています</li>
-              </ul>
-            </section>
-          </aside>
+        <div class="shortcut-scene scene-copy">
+          <span class="scene-label">CTRL + C / COPY</span>
+          <span class="scene-crate"></span>
+          <span class="scene-selection"></span>
+          <span class="scene-crate scene-crate-ghost"></span>
+          <span class="scene-keycaps"><kbd>Ctrl</kbd><b>+</b><kbd>C</kbd></span>
+          <svg class="scene-cursor" viewBox="0 0 24 24">
+            <path d="M5 3 18.5 10.8l-5.9 1.2-2.7 5.6L5 3Z" />
+          </svg>
         </div>
 
-        <footer class="terminal-foot">
-          <span>SHORTCUT DUNGEON / 2026</span>
-          <span>バージョン 0.1.0</span>
-        </footer>
-      </section>
+        <div class="shortcut-scene scene-paste">
+          <span class="scene-label">CTRL + V / PASTE</span>
+          <span class="scene-slots"><i></i><i></i><i></i><i></i></span>
+          <span class="scene-paste-flash"></span>
+          <span class="scene-crate scene-paste-crate"></span>
+          <span class="scene-keycaps"><kbd>Ctrl</kbd><b>+</b><kbd>V</kbd></span>
+          <svg class="scene-cursor" viewBox="0 0 24 24">
+            <path d="M5 3 18.5 10.8l-5.9 1.2-2.7 5.6L5 3Z" />
+          </svg>
+        </div>
+
+        <div class="shortcut-scene scene-text">
+          <span class="scene-label">TEXT://コピー / はりつけ</span>
+          <span class="scene-sheet scene-sheet-source">
+            <i class="line line-70"></i><i class="line line-92"></i><i class="line line-54"></i>
+            <span class="scene-selection"></span>
+          </span>
+          <span class="scene-sheet scene-sheet-copy">
+            <i class="line line-70"></i><i class="line line-92"></i><i class="line line-54"></i>
+          </span>
+          <span class="scene-keycaps"><kbd>Ctrl</kbd><b>+</b><kbd>C</kbd><b>/</b><kbd>V</kbd></span>
+          <svg class="scene-cursor" viewBox="0 0 24 24">
+            <path d="M5 3 18.5 10.8l-5.9 1.2-2.7 5.6L5 3Z" />
+          </svg>
+        </div>
+      </div>
+
+      <header class="site-header">
+        <a class="site-brand" href="#top" aria-label="Shortcut Dungeon トップへ">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span>SHORTCUT<br />DUNGEON</span>
+        </a>
+        <nav class="site-nav" aria-label="ページ内ナビゲーション">
+          <a href="#controls">基本操作</a>
+          <a href="#shortcuts">ショートカット</a>
+          <a href="#play">プレイする</a>
+        </nav>
+        <span id="user-badge" class="chip chip-user" data-tone="none">未ログイン</span>
+      </header>
+
+      <main class="home-content">
+        <section id="top" class="landing-hero" aria-labelledby="home-title">
+          <div class="hero-copy">
+            <p class="section-eyebrow"><span>キーボードパズル</span><span>01 / はじめる</span></p>
+            <h1 id="home-title" class="wordmark">
+              <span class="wordmark-main">SHORTCUT</span>
+              <span class="wordmark-sub">DUNGEON</span>
+            </h1>
+            <p class="hero-tagline">キーひとつで、迷宮を動かせ。</p>
+            <p class="hero-description">移動して、箱をコピーして、道をひらく。<br />ショートカットが攻略のカギになるパズルゲーム。</p>
+            <ul class="hero-metrics" aria-label="ゲーム情報">
+              <li><span>ステージ</span><strong>05</strong></li>
+              <li><span>モード</span><strong>ひとり / みんな</strong></li>
+              <li><span>通信</span><strong class="metric-live">オンライン</strong></li>
+            </ul>
+            <a class="scroll-link" href="#controls">遊び方を見る <span aria-hidden="true">↓</span></a>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="hero-board">
+              <span class="board-cell cell-blue">↑</span><span class="board-cell"></span><span class="board-cell cell-yellow">▣</span><span class="board-cell"></span>
+              <span class="board-cell"></span><span class="board-cell cell-red">C</span><span class="board-cell cell-green">▣</span><span class="board-cell"></span>
+              <span class="board-cell cell-blue">←</span><span class="board-cell"></span><span class="board-cell"></span><span class="board-cell cell-red">GO</span>
+            </div>
+            <span class="art-label art-label-top">コピー / はりつけ</span>
+            <span class="art-label art-label-bottom">みちを見つけよう →</span>
+            <span class="hero-spark spark-one">✳</span><span class="hero-spark spark-two">✳</span>
+          </div>
+        </section>
+
+        <section id="controls" class="guide-section" aria-labelledby="controls-title">
+          <div class="section-heading">
+            <p class="section-eyebrow"><span>01 — きほんの操作</span><span>移動</span></p>
+            <h2 id="controls-title">まずは、<span>動かしてみよう。</span></h2>
+            <p>矢印キーか WASD で、プレイヤーを1マスずつ移動します。</p>
+          </div>
+          <div class="control-layout">
+            <div class="control-card control-card-blue">
+              <span class="card-number">01</span>
+              <div class="keypad" aria-label="矢印キーで移動">
+                <kbd class="key-up">↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd>
+              </div>
+              <h3>行きたい方向へ移動</h3>
+              <p>矢印キー、または W・A・S・D を使います。</p>
+            </div>
+            <div class="control-card control-card-yellow">
+              <span class="card-number">02</span>
+              <div class="mini-maze" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <h3>道を見つけてゴールへ</h3>
+              <p>壁や仕掛けをよけながら、出口を目指しましょう。</p>
+            </div>
+            <div class="control-card control-card-green">
+              <span class="card-number">03</span>
+              <div class="crate-demo" aria-hidden="true"><span>▣</span><b>→</b><span>▣</span></div>
+              <h3>目の前の箱を活用</h3>
+              <p>向いている方向の箱に、コピーや貼り付けを使えます。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="shortcuts" class="guide-section shortcut-section" aria-labelledby="shortcuts-title">
+          <div class="section-heading">
+            <p class="section-eyebrow"><span>02 — ショートカットキー</span><span>考えて使おう</span></p>
+            <h2 id="shortcuts-title">ショートカットで、<span>道をひらく。</span></h2>
+            <p>Windows は Ctrl、Mac は ⌘ を おしながら、もう一つのキーを おします。</p>
+          </div>
+          <div class="shortcut-grid">
+            <article class="shortcut-card shortcut-red">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>C</kbd></div>
+              <div><h3>コピー</h3><p>同じ箱をもう一つ作ること。むいている方向の箱をコピーして、手元にためておく</p></div>
+              <span class="shortcut-index">01</span>
+            </article>
+            <article class="shortcut-card shortcut-blue">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>X</kbd></div>
+              <div><h3>切り取り</h3><p>箱をその場から取って、手元に持ってくる。むいている方向の箱を動かしたいときに使う</p></div>
+              <span class="shortcut-index">02</span>
+            </article>
+            <article class="shortcut-card shortcut-green">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>V</kbd></div>
+              <div><h3>貼り付け</h3><p>手元にためた箱を、むいている方向の空いているマスに置く</p></div>
+              <span class="shortcut-index">03</span>
+            </article>
+            <article class="shortcut-card shortcut-yellow">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>Z</kbd></div>
+              <div><h3>元に戻す</h3><p>一つ前の動きや箱の動かし方をなかったことにして、一つ前にもどす</p></div>
+              <span class="shortcut-index">04</span>
+            </article>
+            <article class="shortcut-card shortcut-violet">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>Y</kbd></div>
+              <div><h3>前に戻す</h3><p>元にもどした動きをもう一度やり直して、次のばしょへすすめる</p></div>
+              <span class="shortcut-index">05</span>
+            </article>
+            <article class="shortcut-card shortcut-sky">
+              <div class="shortcut-keys"><kbd>Ctrl</kbd><b>+</b><kbd>A</kbd></div>
+              <div><h3>全選択</h3><p>まとめて動かしたい箱を、いっぺんにえらぶ</p></div>
+              <span class="shortcut-index">06</span>
+            </article>
+          </div>
+          <p class="shortcut-footnote"><kbd>Ctrl</kbd> + <kbd>Y</kbd>（または <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd>）でやり直し　／　ゲームオーバーになったら <kbd>R</kbd> か <kbd>Enter</kbd> で もう一度チャレンジ</p>
+        </section>
+
+        <section id="play" class="play-section" aria-labelledby="play-title">
+          <div class="play-heading">
+            <p class="section-eyebrow"><span>03 — ぼうけんへ</span><span>じゅんびはいい？</span></p>
+            <h2 id="play-title">準備ができたら、<br /><span>冒険をはじめよう。</span></h2>
+            <p>プレイ方法を選んでください。</p>
+            <p id="progress-summary" class="progress-summary">クリア 0 / 5</p>
+            <ul id="stage-progress" class="stage-list" hidden></ul>
+          </div>
+          <div class="play-panel">
+            <div class="login-options" aria-label="プレイ方法を選択">
+              <button id="google-login-button" class="choice choice-google" type="button" disabled aria-describedby="google-note">
+                <span class="choice-icon" aria-hidden="true">G</span>
+                <span class="choice-text"><strong>Google でログイン</strong><small>進捗を保存して、続きからプレイ</small></span>
+                <span class="choice-arrow" aria-hidden="true">↗</span>
+              </button>
+              <p id="google-note" class="option-note">Google ログインは現在利用できません。</p>
+              <button id="guest-play-button" class="choice choice-guest" type="button" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true">▶</span>
+                <span class="choice-text"><strong>ゲストでプレイ</strong><small>アカウント登録なしですぐに遊べます</small></span>
+                <span class="choice-arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+            <p id="selection-status" class="selection-status" aria-live="polite">プレイ方法を選択してください。</p>
+            <div class="actions">
+              <button id="start-game-button" class="start-button" type="button" disabled>ゲーム開始 <span class="start-arrow" aria-hidden="true">→</span></button>
+              <button id="resume-game-button" class="resume-button" type="button" hidden>続きから</button>
+              <button id="sign-out-button" class="ghost-button" type="button" hidden>ログアウト</button>
+              <button id="help-button" class="ghost-button" type="button">操作ガイド</button>
+            </div>
+            <div class="audio-control">
+              <button id="bgm-toggle-button" class="audio-toggle" type="button" aria-pressed="true" data-state="on">
+                <span class="audio-toggle-icon" aria-hidden="true">♪</span>
+                <span class="audio-toggle-label">BGM</span>
+                <span class="audio-toggle-state">ON</span>
+              </button>
+              <p class="audio-note">音楽はゲームプレイ中だけ流れます。</p>
+            </div>
+            <p id="home-message" class="home-message" role="status"></p>
+          </div>
+        </section>
+
+        <footer class="home-footer"><span>SHORTCUT DUNGEON</span><a href="#top">ページの先頭へ ↑</a></footer>
+      </main>
 
       <div id="auth-loading" class="boot-overlay" role="status" aria-live="polite">
-        <p class="boot-line">起動中</p>
-        <p class="boot-text">セッションを確認しています…</p>
+        <p class="boot-line">READY</p><p class="boot-text">セッションを確認しています…</p>
         <div class="boot-bar" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
+
+    <main id="play-mode-screen" class="mode-screen" tabindex="-1" hidden>
+      <header class="site-header mode-header">
+        <button class="site-brand mode-back-button" type="button" id="mode-back-button" aria-label="ホームへ戻る">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span>SHORTCUT<br />DUNGEON</span>
+        </button>
+        <span class="mode-header-title">モードをえらぶ</span>
+        <div class="mode-account">
+          <span id="mode-user-badge" class="chip chip-user">ログイン中</span>
+        </div>
+      </header>
+
+      <div class="mode-content">
+        <p class="mode-eyebrow">準備できました <span>— モードをえらんでください</span></p>
+        <h1>どのモードで<br /><span>冒険しますか？</span></h1>
+        <p class="mode-intro">プレイ方法を選択してください。</p>
+
+        <div class="mode-options" aria-label="プレイ方法">
+          <button id="solo-play-button" class="mode-option mode-option-solo" type="button">
+            <span class="mode-option-index">01 / ひとり</span>
+            <span class="mode-option-icon" aria-hidden="true">⌁</span>
+            <strong>一人でプレイ</strong>
+            <small>ひとりで迷宮を攻略する</small>
+            <span class="mode-option-arrow" aria-hidden="true">→</span>
+          </button>
+
+          <!-- Room flow is intentionally isolated behind its own UI callback. -->
+          <button id="create-room-button" class="mode-option mode-option-create" type="button">
+            <span class="mode-option-index">02 / みんな</span>
+            <span class="mode-option-icon" aria-hidden="true">＋</span>
+            <strong>ルームを作成</strong>
+            <small>部屋を作って友達を招待する</small>
+            <span class="mode-option-arrow" aria-hidden="true">↗</span>
+          </button>
+
+          <button id="join-room-button" class="mode-option mode-option-join" type="button">
+            <span class="mode-option-index">03 / みんな</span>
+            <span class="mode-option-icon" aria-hidden="true">⌕</span>
+            <strong>ルームに参加</strong>
+            <small>招待コードで部屋に参加する</small>
+            <span class="mode-option-arrow" aria-hidden="true">↗</span>
+          </button>
+        </div>
+        <button id="mode-sign-out-button" class="mode-sign-out mode-sign-out-wide" type="button">ログアウト</button>
+        <p id="play-mode-message" class="mode-message" role="status" aria-live="polite"></p>
       </div>
     </main>
 
@@ -168,13 +325,13 @@
       <section class="game-terminal" aria-label="ゲーム画面">
         <header class="game-bar">
           <button id="back-home-button" class="bar-button" type="button">
-            <span aria-hidden="true">◂</span> ホームにもどる
+            <span aria-hidden="true">◂</span> ホーム
           </button>
           <p class="game-path">
-            stage://<span id="game-stage-label" >プレイ中</span>
+            stage://<span id="game-stage-label">running</span>
           </p>
           <div class="game-bar-right">
-            <span id="game-user-badge" class="chip chip-user" data-tone="none">未選択</span>
+            <span id="game-user-badge" class="chip chip-user" data-tone="none">未ログイン</span>
             <span id="save-status" class="save-status" aria-live="polite">保存済み --:--</span>
             <button id="game-help-button" class="bar-button bar-button-icon" type="button">
               <span aria-hidden="true">?</span>
@@ -195,32 +352,49 @@
 
         <footer class="game-foot">
           <span class="footer-item"><kbd>↑↓←→ / WASD</kbd>移動</span>
-          <span class="footer-item"><kbd>Ctrl + C / V / X / Z</kbd>木箱をそうさ</span>
-          <span class="footer-item"><kbd>Enter / R</kbd>やりなおす</span>
+          <span class="footer-item"><kbd>Ctrl + C / V / X / Z</kbd>ショートカット</span>
+          <span class="footer-item"><kbd>Enter / R</kbd>リトライ</span>
         </footer>
+      </section>
+      <section id="pause-overlay" class="pause-overlay" aria-labelledby="pause-title" hidden>
+        <div class="pause-panel">
+          <p class="pause-eyebrow">ゲームを一時停止中</p>
+          <h2 id="pause-title">一時停止</h2>
+          <label class="pause-volume-control" for="pause-bgm-volume">
+            <span>BGM 音量</span><output id="pause-bgm-volume-value" for="pause-bgm-volume">32%</output>
+            <input id="pause-bgm-volume" type="range" min="0" max="1" step="0.01" />
+          </label>
+          <label class="pause-volume-control" for="pause-se-volume">
+            <span>効果音 音量</span><output id="pause-se-volume-value" for="pause-se-volume">55%</output>
+            <input id="pause-se-volume" type="range" min="0" max="1" step="0.01" />
+          </label>
+          <button id="pause-resume-button" class="start-button" type="button">ゲームに戻る</button>
+          <button id="pause-quit-button" class="bar-button pause-quit-button" type="button">ゲームをやめる</button>
+        </div>
       </section>
     </main>
 
     <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
       <header class="help-bar">
-        <h2 id="help-title">あそびかた</h2>
+        <h2 id="help-title">操作ガイド</h2>
         <button id="help-close-button" class="bar-button" type="button">とじる</button>
       </header>
       <div class="help-body">
         <p>
-          このダンジョンでは、パソコンのショートカットが魔法になるよ。
+          このダンジョンでは、実際のPCショートカットがそのまま魔法になります。
           向いている方向の1マスに対して操作が働きます。
         </p>
         <dl class="help-list">
-          <div><dt>Ctrl + A</dt><dd>木箱をぜんぶ選ぶ。全選択ポーションが必要。</dd></div>
-          <div><dt>Ctrl + C</dt><dd>目の前の木箱をコピーする。元の木箱はそのまま。</dd></div>
-          <div><dt>Ctrl + V</dt><dd>コピーした木箱を目の前にはる。回数を1使う。</dd></div>
-          <div><dt>Ctrl + X</dt><dd>目の前の木箱を切り取る。はるまでコピーに残る。</dd></div>
-          <div><dt>Ctrl + Z</dt><dd>一手前にもどす。ゲームオーバーのときも使えるよ。</dd></div>
-          <div><dt>R / Enter</dt><dd>ゲームオーバーのとき、最初からやりなおす。</dd></div>
+          <div><dt>Ctrl + C</dt><dd>目の前の木箱をコピーする。コピー元は消えない。</dd></div>
+          <div><dt>Ctrl + V</dt><dd>コピーした木箱を目の前に貼り付ける。エナジーを1消費。</dd></div>
+          <div><dt>Ctrl + X</dt><dd>目の前の木箱を切り取る。貼り付けるまで手元に保持。</dd></div>
+          <div><dt>Ctrl + A</dt><dd>全選択ポーションを使い、動かせる木箱をまとめて選ぶ。</dd></div>
+          <div><dt>Ctrl + Z</dt><dd>直前の操作を取り消す。レーザーに当たった時も一手前に戻れる。</dd></div>
+          <div><dt>Ctrl + Y</dt><dd>取り消した操作をやり直す。</dd></div>
+          <div><dt>R / Enter</dt><dd>ゲームオーバー時に今のステージをやり直す。</dd></div>
         </dl>
         <p class="help-note">
-          ステージをクリアすると、自動で保存されるよ。
+          進捗はステージクリア時に自動保存されます。Ctrl + S を押す必要はありません。
         </p>
       </div>
     </dialog>
