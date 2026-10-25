@@ -1412,8 +1412,7 @@
     "x": 21,
     "y": 7
   },
-  "shortcutGate": null,
   "hint": "",
-  "initialSkillPotions": 0,
-  "initialSelectAllPotions": 0
+  "initialPasteEnergy": 0,
+  "initialSelectAllEnergy": 0
 }
