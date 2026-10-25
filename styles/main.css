@@ -1039,6 +1039,10 @@ body {
   text-align: center;
 }
 
+.boot-overlay[hidden] {
+  display: none;
+}
+
 .boot-line {
   margin: 0;
   font-family: var(--mono);

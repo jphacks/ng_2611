@@ -256,7 +256,8 @@ export function setupHome({
     progress: null,
     authConfigured: false,
     authReason: '',
-    loading: true,
+    // ログイン状態の確認は裏側で進め、ホーム画面はすぐ操作可能にします。
+    loading: false,
     busy: false,
     stages: [],
     totalStages: STAGE_TOTAL_FALLBACK,
