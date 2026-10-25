@@ -4,7 +4,8 @@ import STAGES from '../data/stages.js';
 import {
   UI_COLORS,
   drawDivider,
-  drawEnergyGem,  drawKeycap,
+  drawEnergyGem,
+  drawKeycap,
   drawPanel,
   drawPotion,
   drawVignette,
@@ -24,7 +25,9 @@ const COLORS = {
   player: '#70e1c1',
   playerOutline: '#d5fff2',
   accent: '#f3c969',
-  skillPotion: '#4aa8ff',  locked: '#db7d59',
+  pastePotion: '#4aa8ff',
+  selectAllPotion: '#be88ff',
+  locked: '#db7d59',
   unlocked: '#70e1c1',
   laser: '#ff5e68',
   laserGlow: 'rgba(255, 94, 104, 0.42)',
@@ -57,11 +60,12 @@ export default class MainGameScene {
       y: (this.stage.start.y + 0.5) * this.tileSize,
       radius: 13,
       facing: this.stage.start.facing,
-      skillEnergy: 1,
+      pasteEnergy: 1,
+      selectAllEnergy: 0,
     };
-    this.inventory = { skillPotion: 0 };
+    this.inventory = { pastePotion: 0, selectAllPotion: 0 };
     this.loadStage(this.stage);
-    this.lastShortcutMessage = '矢印キー / WASD で1マスずつ移動';
+    this.lastShortcutMessage = '矢印キー / WASD で1マスずつ移動しよう';
 
     this.input = new InputHandler({
       onMove: (direction, pressed) => this.handleMove(direction, pressed),
@@ -76,12 +80,35 @@ export default class MainGameScene {
 
   handleRetryKeyDown = (event) => {
     if (!this.gameOver && !this.runCleared) return;
-    if (event.key !== 'Enter' && event.key.toLowerCase() !== 'r') return;
+    const key = event.key.toLowerCase();
+    const modifier = event.ctrlKey || event.metaKey;
+    if (this.gameOver && modifier && key === 'z') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.rewindAfterDeath();
+      return;
+    }
+    if (key !== 'enter' && key !== 'r') return;
     event.preventDefault();
     event.stopPropagation();
     if (this.runCleared) this.resetRun();
     else this.retryStage();
   };
+
+  rewindAfterDeath() {
+    if (this.undoStack.length === 0) {
+      this.lastShortcutMessage = '戻せる操作がありません。R / Enter で再挑戦';
+      return;
+    }
+    window.removeEventListener('keydown', this.handleRetryKeyDown);
+    this.gameOver = false;
+    this.gameOverReason = '';
+    this.undo();
+    if (this.gameOver) return;
+    this.input.setEnabled(true);
+    this.lastShortcutMessage = '一手前に戻りました。続けて操作できます';
+    this.canvas.focus({ preventScroll: true });
+  }
 
   focusCanvas = () => {
     this.canvas.focus({ preventScroll: true });
@@ -135,9 +162,9 @@ export default class MainGameScene {
   triggerGameOver(reason) {
     if (this.gameOver || this.runCleared) return;
     this.gameOver = true;
-    this.gameOverReason = reason;
-    this.lastShortcutMessage = `${reason} R / Enter でこのステージに再挑戦`;
     this.input.setEnabled(false);
+    this.gameOverReason = reason;
+    this.lastShortcutMessage = `${reason} Ctrl/Cmd+Zで一手戻す / Rで再挑戦`;
     window.addEventListener('keydown', this.handleRetryKeyDown);
   }
 
@@ -146,7 +173,7 @@ export default class MainGameScene {
     this.gameOver = false;
     this.gameOverReason = '';
     this.loadStage(this.stage);
-    this.lastShortcutMessage = `STAGE ${this.stage.number} に再挑戦！`;
+    this.lastShortcutMessage = `ステージ${this.stage.number}に再挑戦！`;
     this.input.setEnabled(true);
     this.canvas.focus({ preventScroll: true });
   }
@@ -162,10 +189,18 @@ export default class MainGameScene {
     }
     if (action === 'selectAll') {
       const selectableBlocks = this.getSelectableBlocks();
+      if (selectableBlocks.length === 0) {
+        this.lastShortcutMessage = '選択できる木箱がありません';
+        return;
+      }
+      if (this.player.selectAllEnergy <= 0) {
+        this.lastShortcutMessage = '全選択回数がないよ。紫のポーションを集めよう';
+        return;
+      }
+      this.recordUndo();
+      this.player.selectAllEnergy -= 1;
       this.selectedBlockIds = new Set(selectableBlocks.map((block) => block.id));
-      this.lastShortcutMessage = selectableBlocks.length > 0
-        ? `操作可能な木箱を${selectableBlocks.length}個選択しました`
-        : '選択できる木箱がありません';
+      this.lastShortcutMessage = `操作可能な木箱を${selectableBlocks.length}個選択しました`;
       return;
     }
 
@@ -204,19 +239,18 @@ export default class MainGameScene {
       if (action === 'cut') {
         const removedIds = new Set(operationBlocks.map((candidate) => candidate.id));
         this.blocks = this.blocks.filter((candidate) => !removedIds.has(candidate.id));
-        this.selectedBlockIds = new Set([...this.selectedBlockIds].filter((id) => !removedIds.has(id)));
         this.openColors = this.computeOpenColors();
         this.rebuildLaserBeams();
         if (this.checkPlayerLaserCollision()) return;
       }
-      if (action === 'copy' && this.stage.shortcutGate) this.shortcutGateOpen = true;
+      if (hasSelection) this.selectedBlockIds.clear();
       const countLabel = operationBlocks.length > 1
         ? `${operationBlocks.length}個の木箱`
         : block.kind === 'colored'
           ? `色つき木箱「${block.name}」`
           : `「${block.name}」`;
       this.lastShortcutMessage = action === 'copy'
-        ? `${countLabel}をコピーしました${this.shortcutGateOpen ? '。裏道ゲートが開きました' : ''}`
+        ? `${countLabel}をコピーしました`
         : `${countLabel}を切り取りました`;
       return;
     }
@@ -224,11 +258,11 @@ export default class MainGameScene {
     if (action === 'paste') {
       const clipboard = this.cloneClipboard(this.clipboard);
       if (!clipboard || clipboard.blocks.length === 0) {
-        this.lastShortcutMessage = 'クリップボードにブロックがありません';
+        this.lastShortcutMessage = 'コピーした木箱がありません';
         return;
       }
-      if (this.player.skillEnergy <= 0) {
-        this.lastShortcutMessage = 'スキルエナジーが不足しています。青いポーションを集めよう';
+      if (this.player.pasteEnergy <= 0) {
+        this.lastShortcutMessage = '貼り付け回数がないよ。青いポーションを集めよう';
         return;
       }
 
@@ -273,7 +307,7 @@ export default class MainGameScene {
       }
 
       this.recordUndo();
-      this.player.skillEnergy -= 1;
+      this.player.pasteEnergy -= 1;
       for (const placement of placements) {
         const { offsetX, offsetY, ...blockData } = placement.entry;
         const fillsWater = this.isWaterTile(placement.x, placement.y);
@@ -318,7 +352,7 @@ export default class MainGameScene {
       return;
     }
 
-    this.lastShortcutMessage = `${modifierLabel}+${action.toUpperCase()} はブロック操作ではありません`;
+    this.lastShortcutMessage = `${modifierLabel}+${action.toUpperCase()} はこのゲームでは使いません`;
   }
 
   getSelectableBlocks() {
@@ -400,7 +434,6 @@ export default class MainGameScene {
     this.openColors = this.computeOpenColors();
     this.blockIdSequence = this.blocks.length;
     this.goal = { ...stage.goal, radius: 19 };
-    this.shortcutGateOpen = false;
     this.clipboard = null;
     this.selectedBlockIds = new Set();
     this.undoStack = [];
@@ -414,9 +447,12 @@ export default class MainGameScene {
     this.player.x = (stage.start.x + 0.5) * this.tileSize;
     this.player.y = (stage.start.y + 0.5) * this.tileSize;
     this.player.facing = stage.start.facing;
-    const initialPotions = Number.isInteger(stage.initialSkillPotions) ? stage.initialSkillPotions : 0;
-    this.inventory.skillPotion = initialPotions;
-    this.player.skillEnergy = 1 + initialPotions * 2;
+    this.inventory = {
+      pastePotion: this.items.filter((item) => item.type === 'pastePotion').length,
+      selectAllPotion: this.items.filter((item) => item.type === 'selectAllPotion').length,
+    };
+    this.player.pasteEnergy = Number.isInteger(stage.initialPasteEnergy) ? stage.initialPasteEnergy : 1;
+    this.player.selectAllEnergy = Number.isInteger(stage.initialSelectAllEnergy) ? stage.initialSelectAllEnergy : 0;
   }
 
   getTargetTile() {
@@ -438,17 +474,17 @@ export default class MainGameScene {
       && tileY >= obstacle.y
       && tileY < obstacle.y + obstacle.height
     ));
-    const gate = this.stage.shortcutGate;
-    const isClosedGate = gate && !this.shortcutGateOpen && tileX === gate.x && tileY === gate.y;
-    const isClosedColorWall = this.colorWalls.some((wall) => (
-      !this.openColors.has(wall.color.toLowerCase())
+    const isClosedColorWall = this.colorWalls.some((wall) => {
+      const active = this.openColors.has(wall.color.toLowerCase());
+      const wallClosed = wall.mode === 'close' ? active : !active;
+      return wallClosed
       && tileX >= wall.x
       && tileX < wall.x + wall.width
       && tileY >= wall.y
-      && tileY < wall.y + wall.height
-    ));
+      && tileY < wall.y + wall.height;
+    });
     const isLaserEmitter = this.lasers.some((laser) => laser.x === tileX && laser.y === tileY);
-    return isWall || isClosedGate || isClosedColorWall || isLaserEmitter;
+    return isWall || isClosedColorWall || isLaserEmitter;
   }
 
   isEmptyFloor(tileX, tileY) {
@@ -467,9 +503,10 @@ export default class MainGameScene {
       blocks: this.blocks.map((block) => ({ ...block })),
       clipboard: this.cloneClipboard(this.clipboard),
       selectedBlockIds: [...this.selectedBlockIds],
-      shortcutGateOpen: this.shortcutGateOpen,
       openColors: [...this.openColors],
-      skillEnergy: this.player.skillEnergy,
+      pasteEnergy: this.player.pasteEnergy,
+      selectAllEnergy: this.player.selectAllEnergy,
+      items: this.items.map((item) => ({ ...item })),
     };
   }
 
@@ -478,17 +515,17 @@ export default class MainGameScene {
     this.player.y = state.y;
     this.player.facing = state.facing;
     const restoredBlocks = state.blocks.map((block) => ({ ...block }));
-    for (const bridge of this.blocks.filter((block) => block.waterFilled)) {
-      const index = restoredBlocks.findIndex((block) => block.id === bridge.id);
-      if (index >= 0) restoredBlocks[index] = { ...bridge }; else restoredBlocks.push({ ...bridge });
-    }
     this.blocks = restoredBlocks;
+    this.items = state.items.map((item) => ({ ...item }));
     this.clipboard = this.cloneClipboard(state.clipboard);
     const selectableIds = new Set(restoredBlocks.filter((block) => !block.waterFilled).map((block) => block.id));
     this.selectedBlockIds = new Set((state.selectedBlockIds ?? []).filter((id) => selectableIds.has(id)));
-    this.shortcutGateOpen = state.shortcutGateOpen;
     this.openColors = new Set(state.openColors);
-    this.player.skillEnergy = state.skillEnergy;
+    this.player.pasteEnergy = state.pasteEnergy;
+    this.player.selectAllEnergy = state.selectAllEnergy;
+    this.inventory.pastePotion = this.items.filter((item) => !item.collected && item.type === 'pastePotion').length;
+    this.inventory.selectAllPotion = this.items.filter((item) => !item.collected && item.type === 'selectAllPotion').length;
+    this.openColors = this.computeOpenColors();
     this.rebuildLaserBeams();
     this.checkPlayerLaserCollision();
   }
@@ -500,24 +537,26 @@ export default class MainGameScene {
 
   undo() {
     if (this.undoStack.length === 0) {
-      this.lastShortcutMessage = '取り消せる操作がありません';
+      this.lastShortcutMessage = 'もどせる操作がありません';
       return;
     }
     this.redoStack.push(this.captureState());
     this.restoreState(this.undoStack.pop());
+    if (this.gameOver) return;
     this.openColors = this.computeOpenColors();
-    this.lastShortcutMessage = '直前の操作を取り消しました';
+    this.lastShortcutMessage = '一手前にもどしました';
   }
 
   redo() {
     if (this.redoStack.length === 0) {
-      this.lastShortcutMessage = 'やり直せる操作がありません';
+      this.lastShortcutMessage = 'やりなおせる操作がありません';
       return;
     }
     this.undoStack.push(this.captureState());
     this.restoreState(this.redoStack.pop());
+    if (this.gameOver) return;
     this.openColors = this.computeOpenColors();
-    this.lastShortcutMessage = '操作をやり直しました';
+    this.lastShortcutMessage = '操作をやりなおしました';
   }
 
   computeOpenColors() {
@@ -552,13 +591,13 @@ export default class MainGameScene {
       const offset = offsets[laser.direction];
       if (!offset) continue;
       const cells = [];
-      for (let step = 1; step <= laser.length; step += 1) {
+      for (let step = 1; step <= 21; step += 1) {
         const tileX = laser.x + offset.x * step;
         const tileY = laser.y + offset.y * step;
         if (tileX <= 0 || tileY <= 0 || tileX >= this.width / this.tileSize - 1 || tileY >= this.height / this.tileSize - 1) break;
         if (this.isFixedObstacle(tileX, tileY) || emitterTiles.has(`${tileX},${tileY}`)) break;
         const block = this.blocks.find((candidate) => candidate.x === tileX && candidate.y === tileY);
-        if (block && block.kind !== 'colored') break;
+        if (block) break;
         cells.push({ x: tileX, y: tileY });
         beamTiles.add(`${tileX},${tileY}`);
       }
@@ -577,14 +616,20 @@ export default class MainGameScene {
 
   collectNearbyItems() {
     for (const item of this.items) {
-      if (item.collected || item.type !== 'skillPotion') continue;
+      if (item.collected) continue;
       const itemX = (item.x + 0.5) * this.tileSize;
       const itemY = (item.y + 0.5) * this.tileSize;
       if (Math.hypot(this.player.x - itemX, this.player.y - itemY) > this.player.radius + 12) continue;
       item.collected = true;
-      this.inventory.skillPotion += 1;
-      this.player.skillEnergy += 2;
-      this.lastShortcutMessage = '青いスキルポーションを入手！エナジー +2';
+      if (item.type === 'pastePotion') {
+        this.inventory.pastePotion = Math.max(0, this.inventory.pastePotion - 1);
+        this.player.pasteEnergy += 1;
+        this.lastShortcutMessage = '青い貼り付けポーションを入手！回数 +1';
+      } else if (item.type === 'selectAllPotion') {
+        this.inventory.selectAllPotion = Math.max(0, this.inventory.selectAllPotion - 1);
+        this.player.selectAllEnergy += 1;
+        this.lastShortcutMessage = '紫の全選択ポーションを入手！回数 +1';
+      }
     }
   }
 
@@ -594,13 +639,12 @@ export default class MainGameScene {
 const nextStage = this.stageManager.advance();
     if (nextStage) {
       this.loadStage(nextStage);
-      this.lastShortcutMessage = `STAGE ${nextStage.number}開始: ${nextStage.name}`;
+      this.lastShortcutMessage = `ステージ${nextStage.number}開始：${nextStage.name}`;
       return;
     }
 
     this.runCleared = true;
     this.lastShortcutMessage = '全ステージクリア！ R / Enter で最初から';
-    this.input.setEnabled(false);
     window.addEventListener('keydown', this.handleRetryKeyDown);
   }
 
@@ -633,7 +677,6 @@ const nextStage = this.stageManager.advance();
     this.drawFloor(ctx);
     this.drawWater(ctx);
     this.drawGoal(ctx);
-    this.drawShortcutGate(ctx);
     this.drawColorWalls(ctx);
     this.drawObstacles(ctx);
     this.drawColorSwitches(ctx);
@@ -665,7 +708,7 @@ const nextStage = this.stageManager.advance();
     ctx.textBaseline = 'middle';
     ctx.fillStyle = COLORS.unlocked;
     ctx.font = '800 13px system-ui, sans-serif';
-    ctx.fillText('DUNGEON COMPLETE', width / 2, panelY + 42);
+    ctx.fillText('ダンジョンクリア', width / 2, panelY + 42);
     ctx.fillStyle = COLORS.text;
     ctx.font = '800 24px system-ui, sans-serif';
     ctx.fillText('全ステージクリア！', width / 2, panelY + 82);
@@ -682,7 +725,7 @@ const nextStage = this.stageManager.advance();
     ctx.fillRect(0, 0, width, height);
 
     const panelWidth = 380;
-    const panelHeight = 150;
+    const panelHeight = 176;
     const panelX = (width - panelWidth) / 2;
     const panelY = (height - panelHeight) / 2;
     drawPanel(ctx, {
@@ -702,17 +745,19 @@ const nextStage = this.stageManager.advance();
     ctx.textBaseline = 'middle';
     ctx.fillStyle = COLORS.laser;
     ctx.font = '800 24px "Cascadia Code", Consolas, monospace';
-    ctx.fillText('GAME OVER', width / 2, panelY + 42);
+    ctx.fillText('ゲームオーバー', width / 2, panelY + 42);
     ctx.fillStyle = COLORS.text;
     ctx.font = '13px "Yu Gothic UI", sans-serif';
     ctx.fillText(truncateText(ctx, this.gameOverReason, panelWidth - 40), width / 2, panelY + 76);
 
-    drawKeycap(ctx, width / 2 - 68, panelY + 100, 48, 20, 'R');
-    drawKeycap(ctx, width / 2 - 12, panelY + 100, 64, 20, 'Enter');
+    drawKeycap(ctx, width / 2 - 116, panelY + 102, 52, 20, 'Ctrl+Z');
     ctx.fillStyle = COLORS.muted;
     ctx.font = '11px "Yu Gothic UI", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('でこのステージに再挑戦', width / 2 + 60, panelY + 110);
+    ctx.fillText('一手前にもどる', width / 2 - 58, panelY + 112);
+    drawKeycap(ctx, width / 2 + 18, panelY + 102, 32, 20, 'R');
+    drawKeycap(ctx, width / 2 + 56, panelY + 102, 60, 20, 'Enter');
+    ctx.fillText('やりなおす', width / 2 + 122, panelY + 112);
     ctx.restore();
   }
 
@@ -784,65 +829,7 @@ const nextStage = this.stageManager.advance();
     ctx.font = '800 8px "Cascadia Code", Consolas, monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('GOAL', 0, 12);
-    ctx.restore();
-  }
-
-  drawShortcutGate(ctx) {
-    const gate = this.stage.shortcutGate;
-    if (!gate) return;
-    const x = gate.x * this.tileSize;
-    const y = gate.y * this.tileSize;
-    const open = this.shortcutGateOpen;
-    const color = open ? COLORS.unlocked : COLORS.locked;
-
-    drawPanel(ctx, {
-      x: x + 3,
-      y: y + 3,
-      width: this.tileSize - 6,
-      height: this.tileSize - 6,
-      radius: 7,
-      fill: open ? 'rgba(112, 225, 193, 0.13)' : 'rgba(219, 125, 89, 0.18)',
-      stroke: color,
-      lineWidth: 1.5,
-      shadowBlur: open ? 12 : 0,
-      shadowColor: 'rgba(112, 225, 193, 0.45)',
-    });
-
-    if (!open) {
-      ctx.save();
-      roundedRectPath(ctx, x + 4, y + 4, this.tileSize - 8, this.tileSize - 8, 6);
-      ctx.clip();
-      ctx.strokeStyle = 'rgba(219, 125, 89, 0.18)';
-      ctx.lineWidth = 1;
-      for (let offset = -this.tileSize; offset < this.tileSize; offset += 7) {
-        ctx.beginPath();
-        ctx.moveTo(x + offset, y + this.tileSize);
-        ctx.lineTo(x + offset + this.tileSize, y);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = 1.5;
-    if (open) {
-      ctx.font = '800 15px "Cascadia Code", Consolas, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('»', x + this.tileSize / 2, y + 14);
-    } else {
-      ctx.strokeRect(x + 16, y + 9, 8, 6);
-      ctx.beginPath();
-      ctx.arc(x + 20, y + 9, 3, Math.PI, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.font = '800 7.5px "Cascadia Code", Consolas, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(open ? 'OPEN' : 'COPY', x + this.tileSize / 2, y + 27);
+    ctx.fillText('ゴール', 0, 12);
     ctx.restore();
   }
 
@@ -959,7 +946,8 @@ const nextStage = this.stageManager.advance();
 
   drawColorWalls(ctx) {
     for (const wall of this.colorWalls) {
-      const open = this.openColors.has(wall.color.toLowerCase());
+      const switchActive = this.openColors.has(wall.color.toLowerCase());
+      const open = wall.mode === 'close' ? !switchActive : switchActive;
       for (let tileY = wall.y; tileY < wall.y + wall.height; tileY += 1) {
         for (let tileX = wall.x; tileX < wall.x + wall.width; tileX += 1) {
           const x = tileX * this.tileSize;
@@ -1011,7 +999,7 @@ const nextStage = this.stageManager.advance();
             ctx.font = '800 7px "Cascadia Code", Consolas, monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('COLOR', baseX + baseWidth / 2, baseY + baseHeight / 2);
+            ctx.fillText(wall.mode === 'close' ? '閉' : '開', baseX + baseWidth / 2, baseY + baseHeight / 2);
             ctx.restore();
           }
         }
@@ -1190,7 +1178,7 @@ const nextStage = this.stageManager.advance();
       ctx.font = '800 7px "Cascadia Code", Consolas, monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(open ? 'OPEN' : 'COLOR', x, y + 20);
+      ctx.fillText(open ? '開' : '閉', x, y + 20);
       ctx.restore();
     }
   }
@@ -1310,13 +1298,13 @@ const nextStage = this.stageManager.advance();
       const x = (item.x + 0.5) * this.tileSize;
       const y = (item.y + 0.5) * this.tileSize;
       const bob = Math.sin(this.elapsed * 3 + item.x * 0.9 + item.y * 0.7) * 2.4;
-      if (item.type !== 'skillPotion') continue;
-      const color = COLORS.skillPotion;
-      const label = 'S';
+      if (item.type !== 'pastePotion' && item.type !== 'selectAllPotion') continue;
+      const color = item.type === 'pastePotion' ? COLORS.pastePotion : COLORS.selectAllPotion;
+      const label = item.type === 'pastePotion' ? 'P' : 'A';
 
       ctx.save();
       const halo = ctx.createRadialGradient(x, y + bob, 1, x, y + bob, 21);
-      halo.addColorStop(0, 'rgba(74, 168, 255, 0.28)');
+      halo.addColorStop(0, item.type === 'pastePotion' ? 'rgba(74, 168, 255, 0.28)' : 'rgba(190, 136, 255, 0.28)');
       halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = halo;
       ctx.fillRect(x - 22, y + bob - 22, 44, 44);
@@ -1398,7 +1386,7 @@ const nextStage = this.stageManager.advance();
     ctx.textBaseline = 'middle';
     ctx.fillStyle = COLORS.muted;
     ctx.font = '700 8px Inter, "Yu Gothic UI", sans-serif';
-    ctx.fillText('STAGE', 288, 23);
+    ctx.fillText('ステージ', 288, 23);
 
     ctx.fillStyle = COLORS.accent;
     ctx.font = '800 24px "Cascadia Code", Consolas, monospace';
@@ -1434,7 +1422,7 @@ const nextStage = this.stageManager.advance();
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.font = '800 8px "Cascadia Code", Consolas, monospace';
-    ctx.fillText('GOAL', 499, 28);
+    ctx.fillText('出口', 499, 28);
   }
 
   drawStatusPanel(ctx, panelFill) {
@@ -1455,25 +1443,25 @@ const nextStage = this.stageManager.advance();
     ctx.fillStyle = COLORS.muted;
     ctx.font = '700 8px Inter, "Yu Gothic UI", sans-serif';
 
-    ctx.fillText('SKILL', 570, 23);
-    drawEnergyGem(ctx, 576, 43, 8, COLORS.skillPotion, this.player.skillEnergy > 0);
-    ctx.fillStyle = COLORS.skillPotion;
+    ctx.fillText('貼る', 570, 23);
+    drawEnergyGem(ctx, 576, 43, 8, COLORS.pastePotion, this.player.pasteEnergy > 0);
+    ctx.fillStyle = COLORS.pastePotion;
     ctx.font = '800 11px "Cascadia Code", Consolas, monospace';
-    ctx.fillText(`x${this.player.skillEnergy}`, 588, 43);
+    ctx.fillText(`x${this.player.pasteEnergy}`, 588, 43);
 
     drawDivider(ctx, 624, 18, 38);
     ctx.fillStyle = COLORS.muted;
     ctx.font = '700 8px Inter, "Yu Gothic UI", sans-serif';
-    ctx.fillText('ITEMS', 636, 23);
-    drawPotion(ctx, 643, 43, 13, COLORS.skillPotion, 'S');
-    ctx.fillStyle = COLORS.text;
+    ctx.fillText('全選択', 636, 23);
+    drawEnergyGem(ctx, 643, 43, 8, COLORS.selectAllPotion, this.player.selectAllEnergy > 0);
+    ctx.fillStyle = COLORS.selectAllPotion;
     ctx.font = '800 10px "Cascadia Code", Consolas, monospace';
-    ctx.fillText(`x${this.inventory.skillPotion}`, 655, 43);
+    ctx.fillText(`x${this.player.selectAllEnergy}`, 655, 43);
 
     drawDivider(ctx, 700, 18, 38);
     ctx.fillStyle = COLORS.muted;
-    ctx.font = '700 8px Inter, "Yu Gothic UI", sans-serif';
-    ctx.fillText('CLIP', 712, 23);
+    ctx.font = '700 7px "Yu Gothic UI", sans-serif';
+    ctx.fillText('コピー', 712, 23);
     drawKeycap(ctx, 712, 33, 17, 17, 'C', { color: COLORS.unlocked });
     ctx.fillStyle = this.clipboard ? COLORS.text : COLORS.muted;
     ctx.font = '700 10.5px "Yu Gothic UI", sans-serif';
@@ -1518,11 +1506,11 @@ const nextStage = this.stageManager.advance();
     drawKeycap(ctx, 682, this.height - 30, 44, 18, 'Ctrl+Z');
     ctx.fillStyle = COLORS.muted;
     ctx.font = '10px Inter, "Yu Gothic UI", sans-serif';
-    ctx.fillText('Undo', 734, this.height - 21);
+    ctx.fillText('戻す', 734, this.height - 21);
     drawKeycap(ctx, 786, this.height - 30, 44, 18, 'Ctrl+Y');
     ctx.fillStyle = COLORS.muted;
     ctx.font = '10px Inter, "Yu Gothic UI", sans-serif';
-    ctx.fillText('Redo', 838, this.height - 21);
+    ctx.fillText('やり直す', 838, this.height - 21);
   }
 
   drawPlayer(ctx) {

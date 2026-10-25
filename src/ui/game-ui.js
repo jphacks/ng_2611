@@ -27,18 +27,18 @@ export function setupGameUi({ onBack, onHelp } = {}) {
     if (!userBadge) return;
 
     if (user?.type === 'user') {
-      userBadge.textContent = user.displayName || user.email || 'SIGNED IN';
+      userBadge.textContent = user.displayName || user.email || 'ログイン中';
       userBadge.dataset.tone = 'user';
       return;
     }
 
     if (user?.type === 'guest') {
-      userBadge.textContent = 'GUEST SESSION';
+      userBadge.textContent = 'ゲスト';
       userBadge.dataset.tone = 'guest';
       return;
     }
 
-    userBadge.textContent = 'NO SESSION';
+    userBadge.textContent = '未選択';
     userBadge.dataset.tone = 'none';
   }
 
@@ -53,7 +53,7 @@ export function setupGameUi({ onBack, onHelp } = {}) {
     }
 
     if (state === 'saved') {
-      saveStatus.textContent = `SAVED ${formatTime(at)}`;
+      saveStatus.textContent = `保存済み ${formatTime(at)}`;
       return;
     }
 
@@ -62,11 +62,11 @@ export function setupGameUi({ onBack, onHelp } = {}) {
       return;
     }
 
-    saveStatus.textContent = message || 'SAVED --:--';
+    saveStatus.textContent = message || '保存済み --:--';
   }
 
   function setStageLabel(label) {
-    if (stageLabel) stageLabel.textContent = label || 'ready';
+    if (stageLabel) stageLabel.textContent = label || '準備完了';
   }
 
   function show({ user, stageLabel: label } = {}) {

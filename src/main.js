@@ -62,7 +62,7 @@ function readStageMeta() {
     .map((stage, index) => ({
       id: String(stage.id),
       number: Number(stage.number) || index + 1,
-      title: String(stage.name || stage.id).toUpperCase(),
+      title: String(stage.name || stage.id),
     }))
     .sort((a, b) => a.number - b.number)
     .map((stage, index) => ({ ...stage, number: index + 1 }));
@@ -303,7 +303,7 @@ function handleProgress(next) {
 
 function scheduleSave() {
   if (!services.save || !currentUser) {
-    gameUi.setSaveStatus({ state: 'idle', message: 'LOCAL ONLY' });
+    gameUi.setSaveStatus({ state: 'idle', message: 'この端末だけに保存' });
     return;
   }
 

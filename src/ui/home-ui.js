@@ -32,7 +32,7 @@ function buildStageItems(stages, total) {
   return Array.from({ length: total || STAGE_TOTAL_FALLBACK }, (_, index) => ({
     id: `stage-${index + 1}`,
     number: index + 1,
-    title: 'STAGE',
+    title: `ステージ ${index + 1}`,
   }));
 }
 
@@ -54,7 +54,6 @@ export function setupHome({
   const userBadge = byId('user-badge');
   const progressSummary = byId('progress-summary');
   const stageList = byId('stage-progress');
-  const bossBadge = byId('boss-badge');
   const selectionStatus = byId('selection-status');
   const message = byId('home-message');
   const helpButton = byId('help-button');
@@ -120,14 +119,13 @@ export function setupHome({
 
     if (progressSummary) {
       progressSummary.replaceChildren();
-      progressSummary.append('CLEARED ');
+      progressSummary.append('クリア ');
       const done = document.createElement('span');
       done.className = 'sum-done';
       done.textContent = String(clearedCount);
-      progressSummary.append(done, ` / ${items.length}`);
+      progressSummary.append(done, ` / ${items.length} ステージ`);
     }
 
-    if (bossBadge) bossBadge.hidden = !state.progress?.bossCleared;
     renderStages();
   }
 
@@ -136,18 +134,18 @@ export function setupHome({
 
     const user = state.user;
     if (user?.type === 'user') {
-      userBadge.textContent = user.displayName || user.email || 'SIGNED IN';
+      userBadge.textContent = user.displayName || user.email || 'ログイン中';
       userBadge.dataset.tone = 'user';
       return;
     }
 
     if (user?.type === 'guest') {
-      userBadge.textContent = 'GUEST SESSION';
+      userBadge.textContent = 'ゲスト';
       userBadge.dataset.tone = 'guest';
       return;
     }
 
-    userBadge.textContent = 'NO SESSION';
+    userBadge.textContent = '未選択';
     userBadge.dataset.tone = 'none';
   }
 
@@ -159,7 +157,7 @@ export function setupHome({
 
     if (!state.authConfigured) {
       if (googleState) {
-        googleState.textContent = 'OFFLINE';
+        googleState.textContent = '未設定';
         googleState.dataset.tone = 'off';
       }
       if (googleNote) {
@@ -172,7 +170,7 @@ export function setupHome({
 
     if (isUser) {
       if (googleState) {
-        googleState.textContent = 'SIGNED IN';
+        googleState.textContent = 'ログイン中';
         googleState.dataset.tone = 'active';
       }
       if (googleNote) googleNote.textContent = 'ログイン済みです。進捗はクラウドに保存されます。';
@@ -180,7 +178,7 @@ export function setupHome({
     }
 
     if (googleState) {
-      googleState.textContent = 'AVAILABLE';
+      googleState.textContent = '利用できます';
       googleState.dataset.tone = 'active';
     }
     if (googleNote) {
@@ -195,7 +193,7 @@ export function setupHome({
 
     if (guestState) {
       const active = state.user?.type === 'guest';
-      guestState.textContent = active ? 'ACTIVE' : 'STANDBY';
+      guestState.textContent = active ? '選択中' : '待機中';
       guestState.dataset.tone = active ? 'active' : 'none';
     }
 
@@ -217,21 +215,21 @@ export function setupHome({
     if (!selectionStatus) return;
 
     if (state.loading) {
-      selectionStatus.textContent = 'セッションを確認しています…';
+      selectionStatus.textContent = 'ログイン状態を確認しています…';
       return;
     }
 
     if (state.user?.type === 'user') {
-      selectionStatus.textContent = 'ログイン中です。GAME START で開始できます。';
+      selectionStatus.textContent = 'ログイン中です。「ゲーム開始」を押すと遊べます。';
       return;
     }
 
     if (state.user?.type === 'guest') {
-      selectionStatus.textContent = 'ゲストでプレイします。GAME START で開始できます。';
+      selectionStatus.textContent = 'ゲストで遊びます。「ゲーム開始」を押してください。';
       return;
     }
 
-    selectionStatus.textContent = 'セッションを選択してください。';
+    selectionStatus.textContent = 'ログイン方法を選んでください。';
   }
 
   function paint() {

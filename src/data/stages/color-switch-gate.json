@@ -24,7 +24,7 @@
   ],
   "items": [
     {
-      "type": "skillPotion",
+      "type": "pastePotion",
       "x": 3,
       "y": 11
     }
@@ -69,6 +69,7 @@
     "x": 21,
     "y": 7
   },
-  "shortcutGate": null,
-  "hint": "赤箱をCtrl+Cでコピーし、同じ色のスイッチの前でCtrl+V"
+  "hint": "赤箱を赤いスイッチに置くと、同じ色のかべが開くよ",
+  "initialPasteEnergy": 1,
+  "initialSelectAllEnergy": 0
 }
