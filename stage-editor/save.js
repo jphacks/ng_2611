@@ -9,13 +9,8 @@ const BLOCK_COLOR = "#b57d50";
 const SWITCH_COLOR = "#ff5e68";
 const STAGE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,63}$/;
 
-function makeSafeFilename(name) {
-  const safeName = name
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
-    .trim()
-    .replace(/[. ]+$/, "");
-
-  return (safeName || "新しいステージ") + ".json";
+function makeSafeFilename(id) {
+    return `${id}.json`;
 }
 
 
@@ -84,46 +79,12 @@ function diagnosticsText(diagnostics) {
 }
 
 
-async function chooseSaveFile(suggestedName) {
-    if (
-        typeof window.showSaveFilePicker !== "function" ||
-        !window.isSecureContext
-    ) {
-        return { fileHandle: null, cancelled: false };
-    }
-
-    try {
-        const fileHandle = await window.showSaveFilePicker({
-            suggestedName: makeSafeFilename(suggestedName),
-            types: [{
-                description: "ステージJSON",
-                accept: { "application/json": [".json"] },
-            }],
-        });
-
-        return { fileHandle, cancelled: false };
-    } catch (error) {
-        if (error.name === "AbortError") {
-            return { fileHandle: null, cancelled: true };
-        }
-
-        window.alert(
-            "保存先を選べなかったため、JSONのダウンロード保存に切り替えます。\n" +
-            error.message
-        );
-
-        return { fileHandle: null, cancelled: false };
-    }
-}
-
-
-
 function downloadJson(stage) {
     const blob = new Blob([JSON.stringify(stage, null, 2) + "\n"], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = makeSafeFilename(stage.name);
+    link.download = makeSafeFilename(stage.id);
     link.style.display = "none";
     document.body.append(link);
     link.click();
@@ -131,44 +92,47 @@ function downloadJson(stage) {
     window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-async function writeToFile(fileHandle, stage) {
-    const writable = await fileHandle.createWritable();
-    try {
-        await writable.write(JSON.stringify(stage, null, 2) + "\n");
-        await writable.close();
-    } catch (error) {
-        await writable.abort?.();
-        throw error;
-    }
-}
-
 async function saveStage() {
     const metadata = boardData.metadata ?? {};
-    const suggestedId = typeof metadata.id === "string" && STAGE_ID_PATTERN.test(metadata.id)
+    const existingId = typeof metadata.id === "string" && STAGE_ID_PATTERN.test(metadata.id)
         ? metadata.id
-        : "new-stage";
+        : null;
+    const suggestedId = existingId ?? `stage-${Date.now()}`;
+    const enteredId = existingId ?? window.prompt(
+        "ステージIDを入力してください（英小文字・数字・ハイフン）。出力ファイル名にも使います。",
+        suggestedId,
+    );
+    if (enteredId === null) return;
+    const id = enteredId.trim();
+    if (!STAGE_ID_PATTERN.test(id)) {
+        window.alert("ステージIDは英小文字・数字・ハイフンで3〜64文字にしてください。");
+        setSaveStatus("ステージIDを確認してください。");
+        return;
+    }
+
+    const existingNumber = Number.isInteger(metadata.number) && metadata.number >= 1
+        ? metadata.number
+        : null;
+    const enteredNumber = existingNumber ?? window.prompt(
+        "ステージ番号を入力してください（既存のステージと重複しない1以上の整数）。",
+        "",
+    );
+    if (enteredNumber === null) return;
+    const number = Number(enteredNumber);
+    if (!Number.isInteger(number) || number < 1) {
+        window.alert("ステージ番号は1以上の整数にしてください。");
+        setSaveStatus("ステージ番号を確認してください。");
+        return;
+    }
+
     const details = {
-        id: suggestedId,
+        id,
         name: typeof metadata.name === "string" && metadata.name.trim()
             ? metadata.name.trim()
             : "新しいステージ",
-        number: Number.isInteger(metadata.number) && metadata.number >= 1
-            ? metadata.number
-            : 6,
+        number,
         hint: typeof metadata.hint === "string" ? metadata.hint : "",
     };
-
-    setSaveStatus("フォルダーを選択してください。");
-    const target = await chooseSaveFile(details.name);
-    if (target.cancelled) {
-        if (target.invalidName) {
-            setSaveStatus("ファイル名を確認してください。");
-        } else {
-            setSaveStatus("フォルダーを選択してください。");
-            window.alert("フォルダーを選択してください。");
-        }
-        return;
-    }
 
     let stage;
     try {
@@ -187,33 +151,13 @@ async function saveStage() {
     }
 
     try {
-        if (target.fileHandle) {
-            const finalValidation = validateStage(stage);
-            if (!finalValidation.ok) {
-                window.alert("選択したファイル名では保存できません。\n\n" + diagnosticsText(finalValidation.errors));
-                setSaveStatus("保存できませんでした。");
-                return;
-            }
-            await writeToFile(target.fileHandle, stage);
-            updateStageMetadata(details);
-            setSaveStatus("保存しました: " + target.fileHandle.name);
-            window.alert("保存しました: " + target.fileHandle.name);
-        } else {
-            downloadJson(stage);
-            updateStageMetadata(details);
-            setSaveStatus("ダウンロードしました: " + details.id + ".json");
-            window.alert("ブラウザーがフォルダー選択に対応していないため、JSONをダウンロードしました。");
-        }
+        downloadJson(stage);
+        updateStageMetadata(details);
+        setSaveStatus("JSONをダウンロードしました: " + makeSafeFilename(details.id));
+        window.alert("ステージを保存しました。ダウンロードフォルダーを確認してください。\nファイル名: " + makeSafeFilename(details.id));
     } catch (error) {
-        try {
-            downloadJson(stage);
-            updateStageMetadata(details);
-            setSaveStatus("選択先への保存に失敗したため、ダウンロードしました: " + stage.id + ".json");
-            window.alert("選択した場所への保存に失敗したため、JSONをダウンロードしました。ダウンロード一覧を確認してください。\n原因: " + error.name + "\n" + error.message);
-        } catch (downloadError) {
-            setSaveStatus("保存に失敗しました。");
-            window.alert("保存とダウンロードの両方に失敗しました。\n原因: " + downloadError.name + "\n" + downloadError.message);
-        }
+        setSaveStatus("保存に失敗しました。");
+        window.alert("JSONをダウンロードできませんでした。\n原因: " + error.name + "\n" + error.message);
     }
 }
 

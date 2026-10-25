@@ -1,5 +1,16 @@
 # 白鳥：ステージ作成サイト・ステージデータ
 
+## ローカルで起動
+
+リポジトリのルートで依存パッケージをインストールしたあと、次のコマンドで起動します。
+
+```bash
+cd stage-editor
+npm run dev
+```
+
+表示されたURL（通常は `http://127.0.0.1:5173/`）をブラウザで開いてください。終了するときはターミナルで `Ctrl+C` を押します。
+
 最終更新: 2026-10-24  
 関連: `../AGENTS.md`、`../shared/STAGE_FORMAT.md`、`../docs/GIMMICKS.md`、`../docs/WORK_BREAKDOWN.md`
 
