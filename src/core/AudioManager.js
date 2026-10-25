@@ -21,9 +21,20 @@ const SE_MODULES = import.meta.glob('../../assets/sounds/se/*.{mp3,ogg}', {
 
 const BGM_KEY = 'dungeon-loop';
 const STORAGE_KEY = 'shortcut-dungeon:bgm';
+const BGM_VOLUME_STORAGE_KEY = 'shortcut-dungeon:bgm-volume';
+const SE_VOLUME_STORAGE_KEY = 'shortcut-dungeon:se-volume';
 const SE_VOICES = 3;
-const BGM_VOLUME = 0.32;
-const SE_VOLUME = 0.55;
+const DEFAULT_BGM_VOLUME = 0.32;
+const DEFAULT_SE_VOLUME = 0.55;
+
+function readVolume(key, fallback) {
+  try {
+    const value = Number(globalThis.localStorage?.getItem(key));
+    return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 function fileKey(path) {
   return path
@@ -76,6 +87,8 @@ class AudioManager {
     this.bgmUrls = collectUrls(BGM_MODULES);
     this.seUrls = collectUrls(SE_MODULES);
     this.bgmEnabled = readBgmPreference();
+    this.bgmVolume = readVolume(BGM_VOLUME_STORAGE_KEY, DEFAULT_BGM_VOLUME);
+    this.seVolume = readVolume(SE_VOLUME_STORAGE_KEY, DEFAULT_SE_VOLUME);
     this.bgmRequested = false;
     this.bgm = null;
     this.sePools = new Map();
@@ -113,6 +126,26 @@ class AudioManager {
     return this.setBgmEnabled(!this.bgmEnabled);
   }
 
+  getBgmVolume() { return this.bgmVolume; }
+
+  getSeVolume() { return this.seVolume; }
+
+  setBgmVolume(volume) {
+    this.bgmVolume = Math.min(1, Math.max(0, Number(volume) || 0));
+    if (this.bgm) this.bgm.volume = this.bgmVolume;
+    try { globalThis.localStorage?.setItem(BGM_VOLUME_STORAGE_KEY, String(this.bgmVolume)); } catch {}
+    return this.bgmVolume;
+  }
+
+  setSeVolume(volume) {
+    this.seVolume = Math.min(1, Math.max(0, Number(volume) || 0));
+    for (const pool of this.sePools.values()) {
+      for (const voice of pool) voice.volume = this.seVolume;
+    }
+    try { globalThis.localStorage?.setItem(SE_VOLUME_STORAGE_KEY, String(this.seVolume)); } catch {}
+    return this.seVolume;
+  }
+
   /** ゲームプレイ開始時に呼びます。BGM がオフなら何もしません。 */
   startBgm() {
     this.bgmRequested = true;
@@ -122,7 +155,7 @@ class AudioManager {
       this.bgm = new Audio(this.bgmUrls.get(BGM_KEY));
       this.bgm.loop = true;
       this.bgm.preload = 'auto';
-      this.bgm.volume = BGM_VOLUME;
+      this.bgm.volume = this.bgmVolume;
     }
 
     if (!this.bgm.paused) return;
@@ -148,7 +181,7 @@ class AudioManager {
   }
 
   /** 効果音を再生します。読み込み失敗や自動再生の拒否は無視します。 */
-  playSe(name, { volume = SE_VOLUME } = {}) {
+  playSe(name, { volume = this.seVolume } = {}) {
     if (!name) return;
 
     const key = String(name).toLowerCase();

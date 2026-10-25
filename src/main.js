@@ -174,6 +174,13 @@ const gameUi = setupGameUi({
     roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
   },
   onHelp: () => home.openHelp(),
+  onResume: () => scene?.togglePause(),
+  onQuit: () => {
+    if (!activeRoomCode) {
+      stopGame({ showHome: false });
+      showPlayMode();
+    }
+  },
 });
 
 playModeUi = setupPlayModeUi({
@@ -579,6 +586,7 @@ async function startGame({ resume = false, stageId = null, stageIds = null, room
         }
       },
       onStageChange: (stage) => gameUi.setStageLabel(`stage ${String(stage.number).padStart(2, '0')}`),
+      onPauseChange: (paused) => gameUi.setPaused(paused),
       onGameOver: ({ reason, stageId } = {}) => {
         console.info('[gameover]', reason, stageId);
       },

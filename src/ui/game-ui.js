@@ -1,3 +1,5 @@
+import { audio } from '../core/AudioManager.js';
+
 /**
  * ゲーム画面のDOM（ヘッダー・保存状態・ユーザー表示）だけを扱います。
  * Canvasの描画は `src/ui/canvas-ui.js` と `MainGameScene` の担当です。
@@ -13,13 +15,20 @@ function formatTime(at) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-export function setupGameUi({ onBack, onHelp } = {}) {
+export function setupGameUi({ onBack, onHelp, onResume, onQuit } = {}) {
   const screen = byId('game-screen');
   const backButton = byId('back-home-button');
   const helpButton = byId('game-help-button');
   const userBadge = byId('game-user-badge');
   const saveStatus = byId('save-status');
   const stageLabel = byId('game-stage-label');
+  const pauseOverlay = byId('pause-overlay');
+  const pauseBgmVolume = byId('pause-bgm-volume');
+  const pauseSeVolume = byId('pause-se-volume');
+  const pauseBgmValue = byId('pause-bgm-volume-value');
+  const pauseSeValue = byId('pause-se-volume-value');
+  const pauseResumeButton = byId('pause-resume-button');
+  const pauseQuitButton = byId('pause-quit-button');
 
   if (!screen) throw new Error('ゲーム画面の要素が見つかりません。');
 
@@ -84,6 +93,15 @@ export function setupGameUi({ onBack, onHelp } = {}) {
     setUser(user);
     if (label) setStageLabel(label);
     setBackDisabled(backDisabled, backDisabled ? 'IN GAME' : 'HOME');
+    if (pauseBgmVolume) pauseBgmVolume.value = String(audio.getBgmVolume());
+    if (pauseSeVolume) pauseSeVolume.value = String(audio.getSeVolume());
+    if (pauseQuitButton) pauseQuitButton.hidden = backDisabled;
+    if (pauseOverlay) pauseOverlay.hidden = true;
+  }
+
+  function setPaused(paused) {
+    if (pauseOverlay) pauseOverlay.hidden = !paused;
+    if (paused) pauseResumeButton?.focus();
   }
 
   function hide() {
@@ -92,6 +110,16 @@ export function setupGameUi({ onBack, onHelp } = {}) {
 
   backButton?.addEventListener('click', () => onBack?.());
   helpButton?.addEventListener('click', () => onHelp?.());
+  pauseBgmVolume?.addEventListener('input', () => {
+    const value = audio.setBgmVolume(pauseBgmVolume.value);
+    if (pauseBgmValue) pauseBgmValue.value = `${Math.round(value * 100)}%`;
+  });
+  pauseSeVolume?.addEventListener('input', () => {
+    const value = audio.setSeVolume(pauseSeVolume.value);
+    if (pauseSeValue) pauseSeValue.value = `${Math.round(value * 100)}%`;
+  });
+  pauseResumeButton?.addEventListener('click', () => onResume?.());
+  pauseQuitButton?.addEventListener('click', () => onQuit?.());
 
   return {
     show,
@@ -100,5 +128,7 @@ export function setupGameUi({ onBack, onHelp } = {}) {
     setSaveStatus,
     setStageLabel,
     setBackDisabled,
+    setPaused,
   };
 }
+
