@@ -109,7 +109,7 @@ export async function getRoom(roomCode) {
   const normalizedCode = validateRoomCode(roomCode);
   const { data: room, error: roomError } = await client
     .from('rooms')
-    .select('id, room_code, created_by, host_user_id, stage_id, started_at, created_at')
+    .select('id, room_code, created_by, host_user_id, stage_id, stage_ids, started_at, created_at')
     .eq('room_code', normalizedCode)
     .maybeSingle();
 
@@ -218,9 +218,29 @@ export async function setRoomStage(roomCode, stageId) {
   });
 }
 
+export async function setRoomStages(roomCode, stageIds) {
+  const { client } = await requireSignedInUser();
+  if (!Array.isArray(stageIds) || stageIds.length === 0) {
+    throw createRoomError('プレイするステージを1つ以上選んでください。', 'STAGE_ID_REQUIRED');
+  }
+  const normalizedStageIds = [...new Set(stageIds.map((id) => String(id ?? '').trim()).filter(Boolean))];
+  if (normalizedStageIds.length !== stageIds.length) {
+    throw createRoomError('ステージの選択内容が正しくありません。', 'STAGE_ID_REQUIRED');
+  }
+  return callRpc(client, 'set_room_stages', {
+    p_room_code: validateRoomCode(roomCode),
+    p_stage_ids: normalizedStageIds,
+  });
+}
+
 export async function startRoom(roomCode) {
   const { client } = await requireSignedInUser();
   return callRpc(client, 'start_room', { p_room_code: validateRoomCode(roomCode) });
+}
+
+export async function stopRoomGame(roomCode) {
+  const { client } = await requireSignedInUser();
+  return callRpc(client, 'stop_room_game', { p_room_code: validateRoomCode(roomCode) });
 }
 
 export async function setRoomPlaying(roomCode, isPlaying) {

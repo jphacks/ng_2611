@@ -225,6 +225,7 @@ body.host-dashboard-open {
 }
 
 .host-dashboard-icon-button,
+.host-dashboard-stop,
 .host-dashboard-end {
   display: inline-flex;
   align-items: center;
@@ -262,6 +263,21 @@ body.host-dashboard-open {
   font-weight: 750;
 }
 
+.host-dashboard-stop {
+  gap: 7px;
+  padding: 0 14px;
+  border-color: rgba(247, 210, 126, 0.32);
+  color: var(--hd-amber);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.host-dashboard-stop:hover:not(:disabled) {
+  border-color: rgba(247, 210, 126, 0.62);
+  background: rgba(247, 210, 126, 0.09);
+  color: #ffe7ae;
+}
+
 .host-dashboard-end span {
   font: 400 11px/1 var(--mono, monospace);
 }
@@ -273,6 +289,7 @@ body.host-dashboard-open {
 }
 
 .host-dashboard-icon-button:disabled,
+.host-dashboard-stop:disabled,
 .host-dashboard-end:disabled {
   opacity: 0.42;
   cursor: not-allowed;
@@ -1291,8 +1308,15 @@ body.host-dashboard-open {
     margin-left: auto;
   }
 
-  .host-dashboard-end {
+  .host-dashboard-stop {
     order: 4;
+    flex: 1;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .host-dashboard-end {
+    order: 5;
     flex: 1 0 100%;
     justify-content: center;
     margin-top: 2px;
