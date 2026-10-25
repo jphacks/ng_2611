@@ -14,7 +14,6 @@ src/
   core/AudioManager.js        # BGM・効果音（assets/sounds/）の再生
   core/StageManager.js        # ステージ番号の進行管理
   scenes/MainGameScene.js     # ゲーム状態、ギミック、Canvas描画
-  scenes/BossQuizScene.js     # 全ステージ後のキー入力クイズ
   data/stages.js              # import.meta.glob でJSONを収集・検証・順序化
   data/stages/*.json          # ステージデータ
   data/save/                  # ゲスト/クラウドの進捗保存（白石）
@@ -45,7 +44,7 @@ editor → stage-schema
 2. `package.json` に `@shortcut-dungeon/stage-schema: file:packages/stage-schema` を依存として登録する。
 3. ゲームは `npm run dev`、エディタは `cd editor; npm run dev`。
 4. 変更ごとに `npm run validate:stages`、`npm test`、`npm run build` を実行する。
-5. シーンを終了する時は `dispose()` でInputHandler、Canvas click、ボスクイズを必ず解除する。
+5. シーンを終了する時は `dispose()` でInputHandler、window keydown、Canvas clickを必ず解除する。
 
 ## 追加機能の置き場所
 

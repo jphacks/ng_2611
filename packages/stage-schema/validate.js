@@ -7,14 +7,13 @@ import {
   FACINGS,
   HEX_COLOR_PATTERN,
   ITEM_FIELDS,
-  ITEM_TYPE_LABELS,
   ITEM_TYPES,
   LASER_FIELDS,
   MAX_BLOCK_NAME_LENGTH,
   MAX_HINT_LENGTH,
-  MAX_LASER_LENGTH,
+  OPTIONAL_STAGE_FIELDS,
   MAX_STAGE_NAME_LENGTH,
-  MIN_LASER_LENGTH,
+
   OBSTACLE_FIELDS,
   PLAYABLE_MAX_X,
   PLAYABLE_MAX_Y,
@@ -279,7 +278,13 @@ function validateColorWalls(value, errors) {
       valid = false;
     }
 
-    if (valid) walls.push({ x, y, width, height, color: wall.color });
+    const mode = wall.mode ?? 'open';
+    if (!['open', 'close'].includes(mode)) {
+      addDiagnostic(errors, 'error', 'E001', `${path}.mode は open または close である必要があります`, { path });
+      valid = false;
+    }
+
+    if (valid) walls.push({ x, y, width, height, color: wall.color, mode });
   });
   return walls;
 }
@@ -290,14 +295,6 @@ function validateLasers(value, errors) {
     addDiagnostic(errors, 'error', 'E001', 'lasers は配列である必要があります', { path: 'lasers' });
     return lasers;
   }
-
-  const offsets = {
-    up: { x: 0, y: -1 },
-    down: { x: 0, y: 1 },
-    left: { x: -1, y: 0 },
-    right: { x: 1, y: 0 },
-  };
-
   value.forEach((laser, index) => {
     const path = `lasers[${index}]`;
     if (!isPlainObject(laser)) {
@@ -305,49 +302,13 @@ function validateLasers(value, errors) {
       return;
     }
     checkUnknownKeys(laser, LASER_FIELDS, path, errors);
-
-    let valid = true;
     const tile = readTile(laser, path, errors);
-    if (!tile) valid = false;
-
-    if (!FACINGS.includes(laser.direction)) {
-      addDiagnostic(errors, 'error', 'E001', `${path}.direction は ${FACINGS.join(' / ')} のいずれかである必要があります`, { path });
-      valid = false;
-    }
-
-    const lengthValid = Number.isInteger(laser.length)
-      && laser.length >= MIN_LASER_LENGTH
-      && laser.length <= MAX_LASER_LENGTH;
-    if (!lengthValid) {
-      addDiagnostic(errors, 'error', 'E001', `${path}.length は ${MIN_LASER_LENGTH}〜${MAX_LASER_LENGTH} の整数である必要があります`, { path });
-      valid = false;
-    }
-
-    if (valid) {
-      const offset = offsets[laser.direction];
-      const endX = tile.x + offset.x * laser.length;
-      const endY = tile.y + offset.y * laser.length;
-      if (!isPlayableTile(endX, endY)) {
-        addDiagnostic(errors, 'error', 'E007', `${path} のレーザーが配置可能範囲を超えています`, {
-          path,
-          tile: { x: endX, y: endY },
-        });
-        valid = false;
-      }
-    }
-
-    if (valid) {
-      lasers.push({
-        x: tile.x,
-        y: tile.y,
-        direction: laser.direction,
-        length: laser.length,
-      });
-    }
+    const directionValid = FACINGS.includes(laser.direction);
+    if (!directionValid) addDiagnostic(errors, 'error', 'E001', `${path}.direction は ${FACINGS.join(' / ')} のいずれかである必要があります`, { path });
+    if (tile && directionValid) lasers.push({ x: tile.x, y: tile.y, direction: laser.direction });
   });
   return lasers;
 }
-
 function validateWater(value, errors) {
   const water = [];
   if (!Array.isArray(value)) {
@@ -366,16 +327,6 @@ function validateWater(value, errors) {
     if (tile) water.push(tile);
   });
   return water;
-}
-
-function validateOptionalTile(value, path, errors) {
-  if (value === null) return null;
-  if (value === undefined) {
-    addDiagnostic(errors, 'error', 'E001', `${path} は必須です（不要な場合は null）`, { path });
-    return null;
-  }
-  if (isPlainObject(value)) checkUnknownKeys(value, TILE_FIELDS, path, errors);
-  return readTile(value, path, errors);
 }
 
 function findPath(start, goal, blocked) {
@@ -412,7 +363,7 @@ export function validateStage(stage, options = {}) {
     return { ok: false, errors, warnings };
   }
 
-  const allowedFieldsWithOptional = [...STAGE_FIELDS, 'initialSkillPotions', 'initialSelectAllPotions'];
+  const allowedFieldsWithOptional = [...STAGE_FIELDS, ...OPTIONAL_STAGE_FIELDS];
   checkUnknownKeys(stage, allowedFieldsWithOptional, 'stage', errors);
 
   for (const field of STAGE_FIELDS) {
@@ -449,7 +400,7 @@ export function validateStage(stage, options = {}) {
     addDiagnostic(warnings, 'warning', 'W004', `hint はHUD表示のため${MAX_HINT_LENGTH}文字以下を推奨します`, { path: 'hint' });
   }
 
-  for (const field of ['initialSkillPotions', 'initialSelectAllPotions']) {
+  for (const field of OPTIONAL_STAGE_FIELDS) {
     if (stage[field] !== undefined && (!Number.isInteger(stage[field]) || stage[field] < 0)) {
       addDiagnostic(errors, 'error', 'E001', `${field} は0以上の整数である必要があります`, { path: field });
     }
@@ -465,7 +416,6 @@ export function validateStage(stage, options = {}) {
   const colorWalls = validateColorWalls(stage.colorWalls, errors);
   const lasers = validateLasers(stage.lasers, errors);
   const water = validateWater(stage.water, errors);
-  const shortcutGate = validateOptionalTile(stage.shortcutGate, 'shortcutGate', errors);
 
   const occupancy = new Map();
   const place = (label, tile, code = 'E008') => {
@@ -487,7 +437,7 @@ export function validateStage(stage, options = {}) {
   place('開始位置', start);
   place('ゴール', goal);
   blocks.forEach((block) => place(`木箱「${block.name}」`, block));
-  items.forEach((item) => place(ITEM_TYPE_LABELS[item.type] ?? 'アイテム', item));
+  items.forEach((item) => place(item.type === 'selectAllPotion' ? '全選択ポーション' : '貼り付けポーション', item));
   colorSwitches.forEach((colorSwitch) => place('カラースイッチ', colorSwitch));
   colorWalls.forEach((wall) => {
     for (let tileY = wall.y; tileY < wall.y + wall.height; tileY += 1) {
@@ -502,11 +452,6 @@ export function validateStage(stage, options = {}) {
     if (bridge?.kind === 'normal') return;
     place('水場', tile);
   });
-  place('shortcutGate', shortcutGate, 'E009');
-
-  if (shortcutGate && blocks.length === 0) {
-    addDiagnostic(warnings, 'warning', 'W002', 'shortcutGate がありますが、コピー元になる初期木箱がありません', { path: 'blocks' });
-  }
   if (items.length === 0) {
     addDiagnostic(warnings, 'warning', 'W006', 'アイテムが1つも配置されていません', { path: 'items' });
   }
@@ -541,8 +486,8 @@ export function validateStage(stage, options = {}) {
   if (water.length > 0 && normalBlocks.length === 0) {
     addDiagnostic(warnings, 'warning', 'W014', '水場を渡るためのノーマル木箱がありません', { path: 'blocks' });
   }
-  if (lasers.length > 0 && normalBlocks.length === 0) {
-    addDiagnostic(warnings, 'warning', 'W015', 'レーザーがありますが、遮るノーマル木箱がありません', { path: 'blocks' });
+  if (lasers.length > 0 && blocks.length === 0) {
+    addDiagnostic(warnings, 'warning', 'W015', 'レーザーがありますが、遮る木箱がありません', { path: 'blocks' });
   }
 
   const openableColors = new Set();
@@ -557,21 +502,21 @@ export function validateStage(stage, options = {}) {
     water.forEach((tile) => blocked.add(tileKey(tile.x, tile.y)));
   }
   colorWalls.forEach((wall) => {
-    if (openableColors.has(normalizeColor(wall.color))) return;
+    const switchActive = openableColors.has(normalizeColor(wall.color));
+    if (wall.mode === 'open' ? switchActive : !switchActive) return;
     for (let tileY = wall.y; tileY < wall.y + wall.height; tileY += 1) {
       for (let tileX = wall.x; tileX < wall.x + wall.width; tileX += 1) {
         blocked.add(tileKey(tileX, tileY));
       }
     }
   });
-  if (shortcutGate) blocked.add(tileKey(shortcutGate.x, shortcutGate.y));
 
   if (start && goal && !findPath(start, goal, blocked)) {
     addDiagnostic(
       warnings,
       'warning',
       'W005',
-      '壁・初期木箱・閉じたゲートだけを考慮すると、開始位置からゴールへの経路がありません',
+      '壁・初期木箱・色壁を考慮すると、開始位置からゴールへの経路がありません',
       { path: 'goal' },
     );
   }
