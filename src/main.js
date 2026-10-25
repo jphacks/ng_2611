@@ -10,6 +10,8 @@
 import { setupHome } from './ui/home-ui.js';
 import { setupGameUi } from './ui/game-ui.js';
 import { setupPlayModeUi } from './ui/play-mode-ui.js';
+import MainGameScene from './scenes/MainGameScene.js';
+import GameLoop from './core/GameLoop.js';
 import { setupRoomUi } from './rooms/room-ui.js';
 import { setupRoomLobbyUi } from './rooms/room-lobby-ui.js';
 import { buildHostDashboardSnapshot, setupHostDashboardUi } from './rooms/host-dashboard.js';
@@ -20,8 +22,6 @@ const STAGE_TOTAL_FALLBACK = 5;
 const optionalModules = {
   auth: import.meta.glob('./auth/auth.js'),
   save: import.meta.glob('./data/save/save-repository.js'),
-  scene: import.meta.glob('./scenes/MainGameScene.js'),
-  loop: import.meta.glob('./core/GameLoop.js'),
   stages: import.meta.glob('./data/stages/*.json', { eager: true, import: 'default' }),
 };
 
@@ -79,7 +79,6 @@ let services = { auth: null, save: null };
 
 let scene = null;
 let gameLoop = null;
-let gameModules = { scene: null, loop: null };
 let activeRoomCode = null;
 let startingGame = false;
 let roomMonitorGeneration = 0;
@@ -542,25 +541,6 @@ async function handleSignOut() {
   }
 }
 
-async function loadGameModules() {
-  if (gameModules.scene && gameModules.loop) return gameModules;
-
-  const [sceneModule, loopModule] = await Promise.all([
-    gameModules.scene ?? loadOptional(optionalModules.scene),
-    gameModules.loop ?? loadOptional(optionalModules.loop),
-  ]);
-
-  gameModules = { scene: sceneModule, loop: loopModule };
-  return gameModules;
-}
-
-function getGameConstructors(modules) {
-  return {
-    MainGameScene: modules.scene?.default ?? modules.scene?.MainGameScene,
-    GameLoop: modules.loop?.default ?? modules.loop?.GameLoop,
-  };
-}
-
 async function startGame({ resume = false, stageId = null, stageIds = null, roomCode = null } = {}) {
   if (scene || startingGame) return;
 
@@ -575,19 +555,6 @@ async function startGame({ resume = false, stageId = null, stageIds = null, room
   }
 
   startingGame = true;
-  const modules = await loadGameModules();
-  const { MainGameScene, GameLoop } = getGameConstructors(modules);
-
-  if (!MainGameScene || !GameLoop) {
-    if (roomCode) {
-      roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
-    } else {
-      home.setMessage('ゲーム本体はまだ接続されていません。ホーム画面のみ表示中です。', 'warn');
-    }
-    startingGame = false;
-    return;
-  }
-
   const canvas = document.getElementById('game-canvas');
   if (!canvas) {
     startingGame = false;
