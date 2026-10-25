@@ -1,0 +1,367 @@
+{
+  "schemaVersion": 1,
+  "id": "stage-1792933305670",
+  "number": 8,
+  "name": "ctrlA",
+  "start": {
+    "x": 4,
+    "y": 7,
+    "facing": "right"
+  },
+  "obstacles": [
+    {
+      "x": 5,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 22,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 21,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 20,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 19,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 18,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 17,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 16,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 15,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 14,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 13,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 12,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 11,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 10,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 9,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 8,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 7,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 1,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 2,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 3,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 4,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 5,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 6,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 7,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 8,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 9,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 10,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 11,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 12,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 13,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 14,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 15,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 16,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 17,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 18,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 19,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 20,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 21,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    },
+    {
+      "x": 22,
+      "y": 9,
+      "width": 1,
+      "height": 1
+    }
+  ],
+  "items": [],
+  "blocks": [
+    {
+      "id": "editor-crate-6",
+      "name": "色付き箱",
+      "kind": "colored",
+      "x": 12,
+      "y": 8,
+      "color": "#ff5e68"
+    },
+    {
+      "id": "editor-crate-1",
+      "name": "色付き箱",
+      "kind": "colored",
+      "x": 1,
+      "y": 6,
+      "color": "#ff9f43"
+    }
+  ],
+  "colorSwitches": [
+    {
+      "x": 9,
+      "y": 8,
+      "color": "#ff5e68"
+    },
+    {
+      "x": 6,
+      "y": 8,
+      "color": "#ff9f43"
+    }
+  ],
+  "colorWalls": [
+    {
+      "x": 10,
+      "y": 6,
+      "width": 1,
+      "height": 1,
+      "color": "#ff5e68",
+      "mode": "open"
+    },
+    {
+      "x": 10,
+      "y": 7,
+      "width": 1,
+      "height": 1,
+      "color": "#ff5e68",
+      "mode": "open"
+    },
+    {
+      "x": 10,
+      "y": 8,
+      "width": 1,
+      "height": 1,
+      "color": "#ff5e68",
+      "mode": "open"
+    },
+    {
+      "x": 7,
+      "y": 6,
+      "width": 1,
+      "height": 1,
+      "color": "#ff9f43",
+      "mode": "open"
+    },
+    {
+      "x": 7,
+      "y": 7,
+      "width": 1,
+      "height": 1,
+      "color": "#ff9f43",
+      "mode": "open"
+    },
+    {
+      "x": 7,
+      "y": 8,
+      "width": 1,
+      "height": 1,
+      "color": "#ff9f43",
+      "mode": "open"
+    }
+  ],
+  "lasers": [],
+  "water": [],
+  "goal": {
+    "x": 16,
+    "y": 7
+  },
+  "hint": "",
+  "initialPasteEnergy": 2,
+  "initialSelectAllEnergy": 2
+}
