@@ -1,5 +1,5 @@
 import './room-ui.css';
-import { deleteRoom, getRoom, leaveRoom, setRoomStages, startRoom, subscribeToRoom } from './room-service.js';
+import { deleteRoom, getRoom, heartbeatRoom, isRoomMemberOffline, leaveRoom, ROOM_HEARTBEAT_INTERVAL_MS, setRoomStages, startRoom, subscribeToRoom } from './room-service.js';
 
 function createLobby() {
   const screen = document.createElement('section');
@@ -44,6 +44,7 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
   let stages = [];
   let unsubscribe = null;
   let pollTimer = null;
+  let heartbeatTimer = null;
   let generation = 0;
   let busy = false;
   let refreshRequest = 0;
@@ -63,6 +64,8 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     unsubscribe = null;
     if (pollTimer !== null) window.clearInterval(pollTimer);
     pollTimer = null;
+    if (heartbeatTimer !== null) window.clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
     screen.hidden = true;
     roomCode = null;
     roomId = null;
@@ -90,7 +93,10 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
       const currentStage = member.current_stage_id
         ? stageNames.get(member.current_stage_id) || member.current_stage_id
         : '未開始';
-      details.textContent = `${member.is_playing ? 'プレイ中' : '待機中'} ・ ${currentStage} ・ クリア ${member.completed_stage_ids?.length ?? 0}`;
+      const presence = isRoomMemberOffline(member)
+        ? 'オフライン'
+        : member.is_playing ? 'プレイ中' : '待機中';
+      details.textContent = `${presence} ・ ${currentStage} ・ クリア ${member.completed_stage_ids?.length ?? 0}`;
       item.append(name, details);
 
       const tags = [];
@@ -114,12 +120,17 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
         : room.stage_id ? [room.stage_id] : [];
       selectionInitialized = true;
     }
-    const selectedStages = stages.filter((stage) => selectedStageIds.includes(stage.id));
     const label = document.createElement('p');
     label.className = 'room-lobby-current-stage';
-    label.textContent = selectedStages.length
-      ? `選択中（ステージ番号順）：${selectedStages.map((stage) => stage.title || stage.id).join(' → ')}`
-      : 'プレイするステージを選択してください。';
+    const updateSequenceLabel = () => {
+      const sequence = selectedStageIds
+        .map((stageId) => stages.find((stage) => stage.id === stageId))
+        .filter(Boolean);
+      label.textContent = sequence.length
+        ? `プレイ順：${sequence.map((stage) => stage.title || stage.id).join(' → ')}`
+        : 'プレイするステージを選択してください。';
+    };
+    updateSequenceLabel();
     stageArea.append(label);
     const activePlayers = (room.members ?? []).filter((member) => (
       member.user_id !== room.host_user_id && !member.left_at && !member.kicked_at
@@ -152,25 +163,49 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     fieldset.className = 'room-lobby-stage-options';
     fieldset.disabled = Boolean(room.started_at);
     const legend = document.createElement('legend');
-    legend.textContent = 'プレイするステージ（選んだステージを番号順にプレイ）';
+    legend.textContent = 'プレイするステージ（チェックした順にプレイ）';
     fieldset.append(legend);
-    const stageInputs = [];
-    for (const stage of stages) {
-      const optionLabel = document.createElement('label');
-      optionLabel.className = 'room-lobby-stage-option';
+    const hint = document.createElement('p');
+    hint.className = 'room-lobby-stage-order-hint';
+    hint.textContent = '保存済みの順番を変えるときは、いったんチェックをすべて外してから、希望する順に付け直してください。';
+    fieldset.append(hint);
+    const stageControls = [];
+    let startButton = null;
+    let configuredStageIds = Array.isArray(room.stage_ids) && room.stage_ids.length
+      ? [...room.stage_ids]
+      : room.stage_id ? [room.stage_id] : [];
+    const isSelectionSaved = () => selectedStageIds.length === configuredStageIds.length
+      && selectedStageIds.every((id, index) => id === configuredStageIds[index]);
+    const updateStartButton = () => {
+      if (!startButton) return;
+      const unsavedOrder = !isSelectionSaved();
+      startButton.disabled = configuredStageIds.length === 0
+        || unsavedOrder
+        || Boolean(room.started_at)
+        || activePlayers.length === 0;
+      startButton.textContent = room.started_at
+        ? 'プレイ中'
+        : unsavedOrder ? '先にステージ順を保存してください' : '選択した順番でプレイ開始';
+    };
+
+    for (const [index, stage] of stages.entries()) {
+      const option = document.createElement('div');
+      option.className = 'room-lobby-stage-option';
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+      checkbox.id = `room-lobby-stage-${index}`;
       checkbox.value = stage.id;
       checkbox.checked = selectedStageIds.includes(stage.id);
-      stageInputs.push(checkbox);
-      checkbox.addEventListener('change', () => {
-        selectedStageIds = stageInputs.filter((input) => input.checked).map((input) => input.value);
-        apply.disabled = selectedStageIds.length === 0 || Boolean(room.started_at);
-      });
+      const checkboxLabel = document.createElement('label');
+      checkboxLabel.htmlFor = checkbox.id;
       const title = document.createElement('span');
       title.textContent = `Stage ${String(stage.number).padStart(2, '0')} — ${stage.title}`;
-      optionLabel.append(checkbox, title);
-      fieldset.append(optionLabel);
+      checkboxLabel.append(title);
+      const order = document.createElement('span');
+      order.className = 'room-lobby-stage-order';
+      option.append(checkbox, checkboxLabel, order);
+      fieldset.append(option);
+      stageControls.push({ stage, checkbox, order });
     }
     const apply = document.createElement('button');
     apply.type = 'submit';
@@ -179,6 +214,30 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     const result = document.createElement('span');
     result.className = 'room-lobby-stage-result';
     form.append(fieldset, apply, result);
+
+    const updateSelectionControls = () => {
+      updateSequenceLabel();
+      for (const control of stageControls) {
+        const orderIndex = selectedStageIds.indexOf(control.stage.id);
+        control.checkbox.checked = orderIndex !== -1;
+        control.order.textContent = orderIndex === -1 ? '未選択' : `${orderIndex + 1}番目`;
+      }
+      apply.disabled = selectedStageIds.length === 0 || Boolean(room.started_at);
+      updateStartButton();
+    };
+
+    for (const control of stageControls) {
+      control.checkbox.addEventListener('change', () => {
+        if (control.checkbox.checked) {
+          if (!selectedStageIds.includes(control.stage.id)) selectedStageIds.push(control.stage.id);
+        } else {
+          selectedStageIds = selectedStageIds.filter((id) => id !== control.stage.id);
+        }
+        updateSelectionControls();
+      });
+    }
+    updateSelectionControls();
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (selectedStageIds.length === 0) {
@@ -189,7 +248,9 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
       result.textContent = '設定中…';
       try {
         await setRoomStages(roomCode, selectedStageIds);
-        result.textContent = 'ステージの順番を設定しました。';
+        configuredStageIds = [...selectedStageIds];
+        result.textContent = 'ステージのプレイ順を保存しました。';
+        updateStartButton();
       } catch (error) {
         result.textContent = error.message || 'ステージを設定できませんでした。';
       } finally {
@@ -198,16 +259,12 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     });
     stageArea.append(form);
 
-    const startButton = document.createElement('button');
+    startButton = document.createElement('button');
     startButton.type = 'button';
     startButton.className = 'room-lobby-start';
-    const configuredStageIds = Array.isArray(room.stage_ids) && room.stage_ids.length
-      ? room.stage_ids
-      : room.stage_id ? [room.stage_id] : [];
-    startButton.textContent = room.started_at ? 'ステージ開始済み' : '選択したステージを開始';
-    startButton.disabled = configuredStageIds.length === 0 || Boolean(room.started_at) || activePlayers.length === 0;
+    updateStartButton();
     startButton.addEventListener('click', async () => {
-      if (configuredStageIds.length === 0 || room.started_at) return;
+      if (configuredStageIds.length === 0 || !isSelectionSaved() || room.started_at) return;
       startButton.disabled = true;
       startButton.textContent = '開始しています…';
       try {
@@ -261,6 +318,12 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     stages = stageOptions;
     selectedStageIds = [];
     selectionInitialized = false;
+    const heartbeatCode = roomCode;
+    const sendHeartbeat = () => heartbeatRoom(heartbeatCode).catch((error) => {
+      console.warn('[room lobby] heartbeat failed', error);
+    });
+    void sendHeartbeat();
+    heartbeatTimer = window.setInterval(sendHeartbeat, ROOM_HEARTBEAT_INTERVAL_MS);
     code.textContent = roomCode;
     screen.hidden = false;
     membersList.replaceChildren();
