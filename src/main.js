@@ -76,6 +76,7 @@ function readStageMeta() {
 let currentUser = null;
 let progress = createEmptyProgress();
 let services = { auth: null, save: null };
+let bootPromise = Promise.resolve();
 
 let scene = null;
 let gameLoop = null;
@@ -464,14 +465,31 @@ async function handleGuest() {
   home.setMessage('');
 
   try {
+    // 起動時のセッション復元がゲスト選択を後から上書きしないよう待ちます。
+    await bootPromise;
+
+    // 保存機能が利用できない環境でも、今回のプレイはゲストとして開始できます。
+    currentUser = { type: 'guest', id: 'guest' };
+    progress = createEmptyProgress();
+
     if (services.auth?.signInAsGuest) {
-      currentUser = await services.auth.signInAsGuest();
-      if (services.save) progress = await services.save.loadSave(currentUser);
-    } else {
-      // 認証モジュールが入るまでの仮セッション（`src/auth` 接続後は使われない）
-      currentUser = { type: 'guest', id: 'guest' };
+      try {
+        currentUser = await services.auth.signInAsGuest();
+      } catch (error) {
+        console.warn('[guest] persistent guest session is unavailable; using a temporary session', error);
+      }
     }
 
+    if (services.save) {
+      try {
+        progress = await services.save.loadSave(currentUser);
+      } catch (error) {
+        console.warn('[guest] saved progress could not be loaded; starting fresh', error);
+      }
+    }
+
+    playModeUi.hide();
+    home.show();
     renderHome();
     home.setMessage('ゲストセッションを開始しました。', 'info');
   } catch (error) {
@@ -834,7 +852,7 @@ window.addEventListener('pagehide', () => {
   if (scene) stopGame({ showHome: false });
 });
 
-boot().catch((error) => {
+bootPromise = boot().catch((error) => {
   console.error('[boot]', error);
   home.setLoading(false);
   home.setMessage('起動に失敗しました。ページを再読み込みしてください。', 'error');
