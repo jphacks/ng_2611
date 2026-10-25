@@ -24,8 +24,8 @@ const STORAGE_KEY = 'shortcut-dungeon:bgm';
 const BGM_VOLUME_STORAGE_KEY = 'shortcut-dungeon:bgm-volume';
 const SE_VOLUME_STORAGE_KEY = 'shortcut-dungeon:se-volume';
 const SE_VOICES = 3;
-const DEFAULT_BGM_VOLUME = 0.32;
-const DEFAULT_SE_VOLUME = 0.55;
+const DEFAULT_BGM_VOLUME = 0.3;
+const DEFAULT_SE_VOLUME = 0.3;
 
 function readVolume(key, fallback) {
   try {

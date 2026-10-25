@@ -95,6 +95,8 @@ export function setupGameUi({ onBack, onHelp, onResume, onQuit } = {}) {
     setBackDisabled(backDisabled, backDisabled ? 'IN GAME' : 'HOME');
     if (pauseBgmVolume) pauseBgmVolume.value = String(audio.getBgmVolume());
     if (pauseSeVolume) pauseSeVolume.value = String(audio.getSeVolume());
+    if (pauseBgmValue) pauseBgmValue.value = `${Math.round(audio.getBgmVolume() * 100)}%`;
+    if (pauseSeValue) pauseSeValue.value = `${Math.round(audio.getSeVolume() * 100)}%`;
     if (pauseQuitButton) pauseQuitButton.hidden = backDisabled;
     if (pauseOverlay) pauseOverlay.hidden = true;
   }

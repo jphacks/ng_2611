@@ -99,7 +99,8 @@ export default class MainGameScene {
       onShortcut: (shortcut) => this.handleShortcut(shortcut),
       onEscape: () => this.togglePause(),
     });
-    this.input.attach(canvas);
+    // Escape must still work after focus moves from the canvas to pause controls.
+    this.input.attach(window);
     this.gameOver = false;
     this.runCleared = false;
     this.gameOverReason = '';
@@ -112,6 +113,7 @@ export default class MainGameScene {
     this.paused = !this.paused;
     this.input.setEnabled(!this.paused);
     this.onPauseChange?.(this.paused);
+    if (!this.paused) this.canvas.focus({ preventScroll: true });
   }
 
   handleRetryKeyDown = (event) => {
