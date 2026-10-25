@@ -36,7 +36,7 @@ AIがステージやローダーを実装する時の唯一の正規仕様です
 | `name` | 1〜40文字 | HUD表示名 |
 | `start` | `{x,y,facing}`、facingは上下左右 | 開始位置と初期の向き |
 | `obstacles` | `{x,y,width,height}` の配列 | 固定壁 |
-| `items` | `skillPotion` の配列 | 接触取得ポーション |
+| `items` | `skillPotion` / `pastePotion` / `selectAllPotion` の配列 | 接触取得ポーション。`skillPotion` は既存ステージ用、`pastePotion` / `selectAllPotion` はエディタ保存用（ゲーム内効果は未実装） |
 | `blocks` | `id,name,kind,x,y,color` の配列 | コピー・切り取り・貼り付け対象 |
 | `colorSwitches` | `{x,y,color}` の配列 | 色つき木箱を置く台 |
 | `colorWalls` | `{x,y,width,height,color}` の配列 | 色連動の通行不能壁 |
@@ -46,7 +46,7 @@ AIがステージやローダーを実装する時の唯一の正規仕様です
 | `shortcutGate` | `{x,y}` または `null` | コピー成功後に開く壁 |
 | `hint` | 文字列（70文字以下推奨） | 下部ヒント |
 
-`initialSkillPotions` は任意の0以上の整数。`kind` は `normal` または `colored`、色は必ず `#rrggbb`。
+`initialSkillPotions` は任意の0以上の整数（ペーストポーションの初期個数）。`initialSelectAllPotions` は任意の0以上の整数（全選択ポーションの初期個数）。`kind` は `normal` または `colored`、色は必ず `#rrggbb`。
 
 ## 検証ルール
 

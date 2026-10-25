@@ -7,6 +7,7 @@ import {
   FACINGS,
   HEX_COLOR_PATTERN,
   ITEM_FIELDS,
+  ITEM_TYPE_LABELS,
   ITEM_TYPES,
   LASER_FIELDS,
   MAX_BLOCK_NAME_LENGTH,
@@ -411,7 +412,7 @@ export function validateStage(stage, options = {}) {
     return { ok: false, errors, warnings };
   }
 
-  const allowedFieldsWithOptional = [...STAGE_FIELDS, 'initialSkillPotions'];
+  const allowedFieldsWithOptional = [...STAGE_FIELDS, 'initialSkillPotions', 'initialSelectAllPotions'];
   checkUnknownKeys(stage, allowedFieldsWithOptional, 'stage', errors);
 
   for (const field of STAGE_FIELDS) {
@@ -448,8 +449,10 @@ export function validateStage(stage, options = {}) {
     addDiagnostic(warnings, 'warning', 'W004', `hint はHUD表示のため${MAX_HINT_LENGTH}文字以下を推奨します`, { path: 'hint' });
   }
 
-  if (stage.initialSkillPotions !== undefined && (!Number.isInteger(stage.initialSkillPotions) || stage.initialSkillPotions < 0)) {
-    addDiagnostic(errors, 'error', 'E001', 'initialSkillPotions は0以上の整数である必要があります', { path: 'initialSkillPotions' });
+  for (const field of ['initialSkillPotions', 'initialSelectAllPotions']) {
+    if (stage[field] !== undefined && (!Number.isInteger(stage[field]) || stage[field] < 0)) {
+      addDiagnostic(errors, 'error', 'E001', `${field} は0以上の整数である必要があります`, { path: field });
+    }
   }
 
   const start = validateStart(stage.start, errors);
@@ -484,7 +487,7 @@ export function validateStage(stage, options = {}) {
   place('開始位置', start);
   place('ゴール', goal);
   blocks.forEach((block) => place(`木箱「${block.name}」`, block));
-  items.forEach((item) => place('スキルポーション', item));
+  items.forEach((item) => place(ITEM_TYPE_LABELS[item.type] ?? 'アイテム', item));
   colorSwitches.forEach((colorSwitch) => place('カラースイッチ', colorSwitch));
   colorWalls.forEach((wall) => {
     for (let tileY = wall.y; tileY < wall.y + wall.height; tileY += 1) {

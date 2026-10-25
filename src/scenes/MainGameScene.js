@@ -39,7 +39,14 @@ const COLORS = {
 
 /** 1画面のCanvasダンジョンとプレイヤー操作を管理します。 */
 export default class MainGameScene {
-  constructor(canvas, { initialProgress, onProgress, onStageChange, onPauseChange } = {}) {
+  constructor(canvas, {
+    initialProgress,
+    stageIds,
+    roomMode = false,
+    onProgress,
+    onStageChange,
+    onPauseChange,
+  } = {}) {
     if (!(canvas instanceof HTMLCanvasElement)) {
       throw new TypeError('MainGameSceneにはCanvas要素を指定してください。');
     }
@@ -52,17 +59,25 @@ export default class MainGameScene {
     this.height = canvas.height;
     this.tileSize = 40;
     this.elapsed = 0;
-    this.stageManager = new StageManager(STAGES);
+    const selectedStages = Array.isArray(stageIds) && stageIds.length
+      ? stageIds.map((id) => STAGES.find((stage) => stage.id === id)).filter(Boolean)
+      : STAGES;
+    if (selectedStages.length === 0 || (Array.isArray(stageIds) && selectedStages.length !== stageIds.length)) {
+      throw new TypeError('プレイするステージの指定が正しくありません。');
+    }
+    this.stageIds = selectedStages.map((stage) => stage.id);
+    this.roomMode = Boolean(roomMode);
+    this.stageManager = new StageManager(selectedStages);
     this.completedStageIds = new Set(initialProgress?.completedStageIds ?? []);
     this.onProgress = onProgress;
     this.onStageChange = onStageChange;
     this.onPauseChange = onPauseChange;
     this.paused = false;
 
-    const savedStageIndex = STAGES.findIndex((stage) => stage.id === initialProgress?.currentStageId);
+    const savedStageIndex = selectedStages.findIndex((stage) => stage.id === initialProgress?.currentStageId);
     if (savedStageIndex >= 0) this.stageManager.index = savedStageIndex;
     else {
-      const nextStageIndex = STAGES.findIndex((stage) => !this.completedStageIds.has(stage.id));
+      const nextStageIndex = selectedStages.findIndex((stage) => !this.completedStageIds.has(stage.id));
       if (nextStageIndex >= 0) this.stageManager.index = nextStageIndex;
     }
 
@@ -670,9 +685,11 @@ export default class MainGameScene {
       completedStageIds: [...this.completedStageIds],
       currentStageId: null,
     });
-    this.lastShortcutMessage = '全ステージクリア！ R / Enter で最初から';
+    this.lastShortcutMessage = this.roomMode
+      ? '選択したステージをすべてクリア！待機画面に戻っています…'
+      : '全ステージクリア！ R / Enter で最初から';
     this.input.setEnabled(false);
-    window.addEventListener('keydown', this.handleRetryKeyDown);
+    if (!this.roomMode) window.addEventListener('keydown', this.handleRetryKeyDown);
   }
 
   resetRun() {
@@ -736,13 +753,13 @@ export default class MainGameScene {
     ctx.textBaseline = 'middle';
     ctx.fillStyle = COLORS.unlocked;
     ctx.font = '800 13px system-ui, sans-serif';
-    ctx.fillText('DUNGEON COMPLETE', width / 2, panelY + 42);
+    ctx.fillText(this.roomMode ? 'ROOM MISSION COMPLETE' : 'DUNGEON COMPLETE', width / 2, panelY + 42);
     ctx.fillStyle = COLORS.text;
     ctx.font = '800 24px system-ui, sans-serif';
-    ctx.fillText('全ステージクリア！', width / 2, panelY + 82);
+    ctx.fillText(this.roomMode ? '選択ステージをすべてクリア！' : '全ステージクリア！', width / 2, panelY + 82);
     ctx.fillStyle = COLORS.muted;
     ctx.font = '500 13px system-ui, sans-serif';
-    ctx.fillText('R / Enter で最初から遊ぶ', width / 2, panelY + 126);
+    ctx.fillText(this.roomMode ? '待機画面に戻っています…' : 'R / Enter で最初から遊ぶ', width / 2, panelY + 126);
     ctx.restore();
   }
   drawGameOver(ctx) {
