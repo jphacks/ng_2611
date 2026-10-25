@@ -13,7 +13,7 @@ import { setupPlayModeUi } from './ui/play-mode-ui.js';
 import { setupRoomUi } from './rooms/room-ui.js';
 import { setupRoomLobbyUi } from './rooms/room-lobby-ui.js';
 import { buildHostDashboardSnapshot, setupHostDashboardUi } from './rooms/host-dashboard.js';
-import { deleteRoom, getCurrentRoom, getRoom, leaveRoom, setRoomPlaying, subscribeToRoom, updateRoomProgress } from './rooms/room-service.js';
+import { deleteRoom, getCurrentRoom, getRoom, leaveRoom, setRoomPlaying, stopRoomGame, subscribeToRoom, updateRoomProgress } from './rooms/room-service.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -90,6 +90,7 @@ let activeRoomProgress = null;
 let hostDashboardUnsubscribe = null;
 let hostDashboardTimer = null;
 let hostDashboardGeneration = 0;
+let finishingRoomSequence = false;
 
 let saveChain = Promise.resolve();
 let pendingProgress = null;
@@ -97,6 +98,13 @@ let playModeUi = null;
 
 const hostDashboardUi = setupHostDashboardUi({
   onRefresh: async ({ roomCode }) => createHostDashboardSnapshot(roomCode),
+  onStopPlay: async ({ roomCode }) => {
+    if (!window.confirm('このルームのプレイを終了し、全員を待機画面へ戻しますか？ルームは削除されません。')) return;
+    await stopRoomGame(roomCode);
+    stopHostDashboardMonitor();
+    hostDashboardUi.close();
+    roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
+  },
   onEndRoom: async ({ roomCode }) => {
     if (!window.confirm(`ルーム ${roomCode} を終了しますか？参加者もルームから退出します。`)) return;
     await deleteRoom(roomCode);
@@ -193,14 +201,33 @@ function showPlayMode() {
 }
 
 function createHostDashboardSnapshotFromRoom(room) {
-  const stages = readStageMeta();
+  const allStages = readStageMeta();
+  const selectedStageIds = Array.isArray(room.stage_ids) && room.stage_ids.length
+    ? room.stage_ids
+    : room.stage_id ? [room.stage_id] : [];
+  const stages = selectedStageIds.length
+    ? selectedStageIds.map((id) => allStages.find((stage) => stage.id === id)).filter(Boolean)
+    : allStages;
   const totalStages = stages.length || STAGE_TOTAL_FALLBACK;
+  const activeStageCounts = new Map();
+  for (const member of room.members ?? []) {
+    if (!member.is_playing || !member.current_stage_id) continue;
+    activeStageCounts.set(member.current_stage_id, (activeStageCounts.get(member.current_stage_id) ?? 0) + 1);
+  }
+  const currentStageId = [...activeStageCounts.entries()]
+    .sort((a, b) => b[1] - a[1])[0]?.[0];
+  const dashboardRoom = {
+    ...room,
+    stage_id: currentStageId || selectedStageIds[0] || room.stage_id,
+  };
   const participantStatus = Object.fromEntries(
     (room.members ?? []).map((member) => {
       const completedStageIds = member.completed_stage_ids ?? [];
+      const clearedSequence = stages.length > 0
+        && stages.every((stage) => completedStageIds.includes(stage.id));
       const status = member.is_playing
         ? 'playing'
-        : completedStageIds.length >= totalStages
+        : clearedSequence
           ? 'cleared'
           : 'waiting';
       return [member.user_id, {
@@ -213,7 +240,7 @@ function createHostDashboardSnapshotFromRoom(room) {
   );
 
   return buildHostDashboardSnapshot({
-    room,
+    room: dashboardRoom,
     stages,
     participantStatus,
     hostUserId: currentUser?.id,
@@ -243,7 +270,10 @@ async function handleRoomStart({ roomCode, stageId }) {
       return;
     }
 
-    await startGame({ roomCode, stageId });
+    const stageIds = Array.isArray(room.stage_ids) && room.stage_ids.length
+      ? room.stage_ids
+      : [room.stage_id || stageId].filter(Boolean);
+    await startGame({ roomCode, stageId: stageIds[0], stageIds });
   } catch (error) {
     console.error('[room] failed to open start view', error);
     window.alert(error.message || 'ルームの開始状態を読み込めませんでした。再読み込みしてください。');
@@ -267,6 +297,12 @@ async function startHostDashboardMonitor(roomCode, roomId) {
     try {
       const room = await getRoom(roomCode);
       if (generation !== hostDashboardGeneration || activeRoomCode !== roomCode) return;
+      if (!room.started_at) {
+        stopHostDashboardMonitor();
+        hostDashboardUi.close();
+        roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
+        return;
+      }
       if (room.host_user_id !== currentUser?.id) {
         stopHostDashboardMonitor();
         hostDashboardUi.close();
@@ -484,11 +520,16 @@ function getGameConstructors(modules) {
   };
 }
 
-async function startGame({ resume = false, stageId = null, roomCode = null } = {}) {
+async function startGame({ resume = false, stageId = null, stageIds = null, roomCode = null } = {}) {
   if (scene || startingGame) return;
 
   if (stageId && !readStageMeta().some((stage) => stage.id === stageId)) {
     home.setMessage(`指定されたステージが見つかりません: ${stageId}`, 'error');
+    return;
+  }
+  if (stageIds && (!Array.isArray(stageIds) || stageIds.length === 0
+    || stageIds.some((id) => !readStageMeta().some((stage) => stage.id === id)))) {
+    window.alert('ルームで選択されたステージを読み込めませんでした。ホストに設定を確認してもらってください。');
     return;
   }
 
@@ -521,6 +562,8 @@ async function startGame({ resume = false, stageId = null, roomCode = null } = {
 
     scene = new MainGameScene(canvas, {
       initialProgress,
+      stageIds,
+      roomMode: Boolean(roomCode),
       onProgress: (nextProgress) => {
         handleProgress(nextProgress);
         if (roomCode) {
@@ -531,7 +574,8 @@ async function startGame({ resume = false, stageId = null, roomCode = null } = {
           saveRoomProgress(roomCode, activeRoomProgress);
         }
         if (roomCode && nextProgress.currentStageId === null) {
-          gameUi.setBackDisabled(false, 'ROOM');
+          gameUi.setBackDisabled(true, 'SAVING');
+          void finishRoomStageSequence(roomCode, activeRoomProgress);
         }
       },
       onStageChange: (stage) => gameUi.setStageLabel(`stage ${String(stage.number).padStart(2, '0')}`),
@@ -593,6 +637,29 @@ async function startGame({ resume = false, stageId = null, roomCode = null } = {
   }
 }
 
+async function finishRoomStageSequence(roomCode, finalProgress) {
+  if (finishingRoomSequence) return;
+  finishingRoomSequence = true;
+  try {
+    await roomProgressChain;
+    await updateRoomProgress(roomCode, {
+      currentStageId: null,
+      completedStageIds: finalProgress?.completedStageIds ?? [],
+    });
+    await setRoomPlaying(roomCode, false);
+    if (activeRoomCode !== roomCode || !scene) return;
+    stopRoomMonitor();
+    stopGame({ showHome: false });
+    roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
+  } catch (error) {
+    console.error('[room] failed to finish selected stage sequence', error);
+    gameUi.setBackDisabled(false, 'ROOM');
+    window.alert('クリア状況を保存できませんでした。通信を確認してから「ルーム」ボタンで待機画面へ戻ってください。');
+  } finally {
+    finishingRoomSequence = false;
+  }
+}
+
 function stopGame({ showHome = true } = {}) {
   stopRoomMonitor();
   gameLoop?.stop();
@@ -642,7 +709,12 @@ async function startRoomMonitor(roomCode) {
   const checkRoomStillExists = async () => {
     if (monitorGeneration !== roomMonitorGeneration || activeRoomCode !== roomCode) return;
     try {
-      await getRoom(roomCode);
+      const room = await getRoom(roomCode);
+      if (!room.started_at && scene) {
+        stopRoomMonitor();
+        stopGame({ showHome: false });
+        roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
+      }
     } catch (error) {
       if (error.code === 'ROOM_NOT_FOUND') {
         returnHomeAfterRoomEnd(roomCode);
@@ -660,7 +732,7 @@ async function startRoomMonitor(roomCode) {
       (payload) => {
         if (payload?.table === 'rooms' && payload.eventType === 'DELETE') {
           returnHomeAfterRoomEnd(roomCode, { confirmedDeleted: true });
-        } else if (payload?.eventType === 'DELETE') {
+        } else {
           void checkRoomStillExists();
         }
       },

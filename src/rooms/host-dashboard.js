@@ -62,6 +62,10 @@ const SHELL = `
         <button class="host-dashboard-icon-button" type="button" data-action="refresh" aria-label="参加者の状態を更新">
           <span aria-hidden="true">&#8635;</span>
         </button>
+        <button class="host-dashboard-stop" type="button" data-action="stop-play">
+          <span aria-hidden="true">&#9632;</span>
+          プレイ終了
+        </button>
         <button class="host-dashboard-end" type="button" data-action="end">
           <span aria-hidden="true">&#10005;</span>
           ルームを終了
@@ -461,7 +465,7 @@ export function buildHostDashboardSnapshot({
   };
 }
 
-export function setupHostDashboardUi({ onRefresh, onEndRoom } = {}) {
+export function setupHostDashboardUi({ onRefresh, onStopPlay, onEndRoom } = {}) {
   const screen = document.createElement('section');
   screen.className = 'host-dashboard';
   screen.setAttribute('role', 'dialog');
@@ -476,6 +480,7 @@ export function setupHostDashboardUi({ onRefresh, onEndRoom } = {}) {
   const live = screen.querySelector('.host-dashboard-live');
   const liveLabel = screen.querySelector('.host-dashboard-live-label');
   const refreshButton = screen.querySelector('[data-action="refresh"]');
+  const stopPlayButton = screen.querySelector('[data-action="stop-play"]');
   const endButton = screen.querySelector('[data-action="end"]');
   const stageNumber = screen.querySelector('[data-stage-number]');
   const stageTitle = screen.querySelector('[data-stage-title]');
@@ -498,6 +503,8 @@ export function setupHostDashboardUi({ onRefresh, onEndRoom } = {}) {
 
   refreshButton.disabled = typeof onRefresh !== 'function';
   if (typeof onRefresh !== 'function') refreshButton.title = '更新処理は未接続です';
+  stopPlayButton.disabled = typeof onStopPlay !== 'function';
+  if (typeof onStopPlay !== 'function') stopPlayButton.title = 'プレイ終了処理は未接続です';
   endButton.disabled = typeof onEndRoom !== 'function';
   if (typeof onEndRoom !== 'function') endButton.title = '終了処理は未接続です';
 
@@ -715,6 +722,21 @@ export function setupHostDashboardUi({ onRefresh, onEndRoom } = {}) {
     }
   }
 
+  async function handleStopPlay() {
+    if (typeof onStopPlay !== 'function') return;
+    stopPlayButton.disabled = true;
+    setSyncMessage('全員を待機画面へ戻しています…', 'syncing');
+
+    try {
+      await onStopPlay({ roomCode: snapshot?.roomCode, snapshot });
+    } catch (error) {
+      console.error('[host-dashboard stop play]', error);
+      setSyncMessage(error?.message || 'プレイを終了できませんでした。', 'error');
+    } finally {
+      stopPlayButton.disabled = false;
+    }
+  }
+
   function open(nextSnapshot) {
     previousFocus = document.activeElement;
     document.body.classList.add('host-dashboard-open');
@@ -745,6 +767,7 @@ export function setupHostDashboardUi({ onRefresh, onEndRoom } = {}) {
   }
 
   refreshButton.addEventListener('click', handleRefresh);
+  stopPlayButton.addEventListener('click', handleStopPlay);
   endButton.addEventListener('click', handleEndRoom);
 
   return {
