@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./icon.js"></script>
   <script type="module" src="./main.js"></script>
   <title>Document</title>
 </head>
@@ -21,32 +22,78 @@
 
       <div class="btn-grid">
         <button class="btn" id="new-btn">新規作成</button>
-        <button class="btn" id="save-btn">保存</button>
-        <button class="btn" id="load-btn">読み込み</button>
+        <button class="btn" id="save-btn" type="button">保存</button>
+        <input id="stage-json-input" class="visually-hidden-file-input" type="file" accept=".json,application/json">
+        <button class="btn load-file-button" id="load-btn" type="button" disabled title="読み込み機能は現在使用できません">読み込み<span class="btn-unavailable-mark">使用不可</span></button>
         <button class="btn" id="name-change-btn">名前変更</button>
       </div>
-      
     </div>
-    <div id="detail">
+
+    <div>
       <h1>使い方</h1>
       <p>ここに使い方の説明が表示されます。</p>
-      <button class="btn-selected" id="box-btn" type="button">木箱</button>
-      <button class="btn-selected" id="wall-btn" type="button">壁</button>
-      <button class="btn-selected" id="water-btn" type="button">水</button>
-      <button class="btn-selected" id="switch-btn" type="button">スイッチ</button>
-      <button class="btn-selected" id="door-btn" type="button">ドア</button>
-      <button class="btn-selected" id="raser-btn" type="button">レーザー</button>
-      <button class="btn-selected" id="start-btn" type="button">スタート</button>
-      <button class="btn-selected" id="goal-btn" type="button">ゴール</button>
-      <button class="btn-selected" id="eraser-btn" type="button">消しゴム</button>
     </div>
   </header>
   
-  <main>
-    <div id="editor-container">
-      <p>here is main editor</p>
-      <canvas id="board" width="960" height="640"></canvas>
+  <div id="toolbox">
+    <button class="btn-selected" id="wall-btn" type="button">壁</button>
+    <button class="btn-selected" id="box-btn" type="button">木箱類</button>
+    <button class="btn-selected" id="water-btn" type="button">水</button>
+    <button class="btn-selected" id="switch-btn" type="button">スイッチ</button>
+    <button class="btn-selected" id="item-btn" type="button">アイテム</button>
+    <button class="btn-selected" id="color-wall-btn" type="button">色連動ドア</button>
+    <button class="btn-selected" id="laser-btn" type="button">レーザー</button>
+    <button class="btn-selected" id="start-btn" type="button">スタート</button>
+    <button class="btn-selected" id="goal-btn" type="button">ゴール</button>
+    <button class="btn-selected" id="eraser-btn" type="button">消しゴム</button>
+    <button id="toolbox-toggle" type="button" aria-label="ツールボックスを閉じる" aria-expanded="true">⌃</button>
   </div>
+  <div id="color-palette" aria-label="色を選んでください" hidden></div>
+  <div id="item-palette" aria-label="アイテムを選んでください" hidden></div>
+  <div id="laser-direction-palette" aria-label="レーザーの向きを選んでください" hidden></div>
+
+  <main>
+    <div id="editor-stage-layout">
+      <aside id="initial-potion-panel" aria-labelledby="initial-potion-title">
+        <h2 id="initial-potion-title">初期スキルポーション</h2>
+        <div class="initial-potion-box">
+          <div class="initial-potion-group">
+            <span class="initial-potion-label">ペーストポーション</span>
+            <div class="initial-potion-row">
+              <button id="initial-paste-decrease" class="potion-arrow" type="button" aria-label="ペーストポーションを1個減らす">−</button>
+              <strong id="initial-paste-count" aria-live="polite">0</strong>
+              <button id="initial-paste-increase" class="potion-arrow" type="button" aria-label="ペーストポーションを1個増やす">+</button>
+            </div>
+          </div>
+          <div class="initial-potion-group">
+            <span class="initial-potion-label">全選択ポーション</span>
+            <div class="initial-potion-row">
+              <button id="initial-select-all-decrease" class="potion-arrow" type="button" aria-label="全選択ポーションを1個減らす">−</button>
+              <strong id="initial-select-all-count" aria-live="polite">0</strong>
+              <button id="initial-select-all-increase" class="potion-arrow" type="button" aria-label="全選択ポーションを1個増やす">+</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <div id="editor-container">
+        <h2 id="stage-name-display">新しいステージ</h2>
+        <div id="stage-name-editor" hidden>
+          <label for="stage-name-input">ステージ名</label>
+          <input id="stage-name-input" type="text" maxlength="40" autocomplete="off">
+          <button class="btn" id="stage-name-confirm" type="button">変更</button>
+          <button class="btn" id="stage-name-cancel" type="button">キャンセル</button>
+          <p id="stage-name-error" role="alert" hidden></p>
+        </div>
+        <canvas id="board" width="960" height="640"></canvas>
+      </div>
+      <aside id="selected-tool-display" aria-live="polite" aria-atomic="true">
+        <span class="selected-tool-caption">現在のカーソル</span>
+        <strong id="selected-tool-name">壁</strong>
+        <span id="selected-tool-icon" aria-hidden="true"></span>
+        <span id="selected-tool-detail"></span>
+        <span id="selected-tool-color" hidden></span>
+      </aside>
+    </div>
   </main>
   
   <footer>    
