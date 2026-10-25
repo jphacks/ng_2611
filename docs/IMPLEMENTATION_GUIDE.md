@@ -11,6 +11,7 @@ src/
   main.js                    # Canvas生成・ゲームループ起動・ホーム接続
   core/GameLoop.js            # requestAnimationFrame と update/render
   core/InputHandler.js        # キー入力をactionへ変換
+  core/AudioManager.js        # BGM・効果音（assets/sounds/）の再生
   core/StageManager.js        # ステージ番号の進行管理
   scenes/MainGameScene.js     # ゲーム状態、ギミック、Canvas描画
   scenes/BossQuizScene.js     # 全ステージ後のキー入力クイズ
@@ -54,3 +55,4 @@ editor → stage-schema
 - 新しい編集UI: `editor/src/`
 - ホームとログイン: `src/ui/home-ui.js`、`src/ui/game-ui.js`、`src/auth/`
 - 進捗保存: `src/data/save/`。ゲーム本体からSupabaseを直接呼ばない。
+- 音: `src/core/AudioManager.js`。音源は `assets/sounds/bgm/` と `assets/sounds/se/` に置き、ファイル名がそのまま効果音のキーになる。

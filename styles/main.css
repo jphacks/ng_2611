@@ -4543,3 +4543,91 @@ body:has(#game-screen:not([hidden])) {
   background: rgba(37, 72, 92, 0.9);
   color: #eafffb;
 }
+
+/* --- BGM オン / オフ（ホーム画面） --------------------------------------- */
+.audio-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.home-shell .audio-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(143, 240, 214, 0.42);
+  border-radius: 3px;
+  background: rgba(10, 30, 44, 0.88);
+  color: #c8f3ea;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.home-shell .audio-toggle:hover {
+  border-color: var(--green);
+  background: rgba(82, 241, 207, 0.12);
+  color: #eafffb;
+}
+
+.home-shell .audio-toggle:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.home-shell .audio-toggle[data-state='off'] {
+  border-color: rgba(118, 166, 202, 0.4);
+  background: rgba(10, 24, 42, 0.7);
+  color: #8fa9bd;
+}
+
+.home-shell .audio-toggle-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.home-shell .audio-toggle-state {
+  min-width: 28px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: rgba(82, 241, 207, 0.16);
+  color: #8af7dd;
+  font-size: 11px;
+  text-align: center;
+}
+
+.home-shell .audio-toggle[data-state='off'] .audio-toggle-state {
+  background: rgba(118, 166, 202, 0.16);
+  color: #9bb2c6;
+}
+
+.home-shell .audio-note {
+  margin: 0;
+  color: #9ac3bd;
+  font-family: var(--jp);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+@media (max-width: 520px) {
+  .audio-control {
+    width: 100%;
+  }
+
+  .home-shell .audio-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .home-shell .audio-note {
+    width: 100%;
+    text-align: center;
+  }
+}
