@@ -9,7 +9,12 @@ export const PLAYABLE_MAX_X = GRID_COLUMNS - 2;
 export const PLAYABLE_MAX_Y = GRID_ROWS - 2;
 
 export const FACINGS = Object.freeze(['up', 'down', 'left', 'right']);
-export const ITEM_TYPES = Object.freeze(['skillPotion']);
+export const ITEM_TYPES = Object.freeze(['skillPotion', 'pastePotion', 'selectAllPotion']);
+export const ITEM_TYPE_LABELS = Object.freeze({
+  skillPotion: 'スキルポーション',
+  pastePotion: 'ペーストポーション',
+  selectAllPotion: '全選択ポーション',
+});
 export const BLOCK_KINDS = Object.freeze(['normal', 'colored']);
 
 export const STAGE_FIELDS = Object.freeze([
