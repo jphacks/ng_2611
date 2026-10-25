@@ -615,11 +615,11 @@ async function startGame({ resume = false, stageId = null, stageIds = null, room
           saveRoomProgress(roomCode, activeRoomProgress);
         }
         if (roomCode && nextProgress.currentStageId === null) {
-          gameUi.setBackDisabled(true, 'SAVING');
+          gameUi.setBackDisabled(true, '保存中');
           void finishRoomStageSequence(roomCode, activeRoomProgress);
         }
       },
-      onStageChange: (stage) => gameUi.setStageLabel(`stage ${String(stage.number).padStart(2, '0')}`),
+      onStageChange: (stage) => gameUi.setStageLabel(`ステージ ${String(stage.number).padStart(2, '0')}`),
       onPauseChange: (paused) => gameUi.setPaused(paused),
       onGameOver: ({ reason, stageId } = {}) => {
         console.info('[gameover]', reason, stageId);
@@ -642,7 +642,7 @@ async function startGame({ resume = false, stageId = null, stageIds = null, room
     playModeUi.hide();
     roomLobbyUi.close();
     gameUi.show({ user: currentUser, backDisabled: Boolean(roomCode) });
-    gameUi.setStageLabel(`stage ${String(scene.stage.number).padStart(2, '0')}`);
+    gameUi.setStageLabel(`ステージ ${String(scene.stage.number).padStart(2, '0')}`);
     canvas.focus({ preventScroll: true });
     scene.render();
     gameLoop.start();
@@ -696,7 +696,7 @@ async function finishRoomStageSequence(roomCode, finalProgress) {
     roomLobbyUi.open(roomCode, { currentUserId: currentUser?.id, stageOptions: readStageMeta() });
   } catch (error) {
     console.error('[room] failed to finish selected stage sequence', error);
-    gameUi.setBackDisabled(false, 'ROOM');
+    gameUi.setBackDisabled(false, 'ルーム');
     window.alert('クリア状況を保存できませんでした。通信を確認してから「ルーム」ボタンで待機画面へ戻ってください。');
   } finally {
     finishingRoomSequence = false;

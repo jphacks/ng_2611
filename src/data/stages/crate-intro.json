@@ -42,7 +42,7 @@
   ],
   "items": [
     {
-      "type": "skillPotion",
+      "type": "pastePotion",
       "x": 3,
       "y": 5
     }
@@ -65,6 +65,7 @@
     "x": 21,
     "y": 7
   },
-  "shortcutGate": null,
-  "hint": "木箱をCtrl+Xで切り取り、指定マスの前からCtrl+Vで配置"
+  "hint": "木箱をCtrl+Xで切り取り、指定マスの前からCtrl+Vで配置",
+  "initialPasteEnergy": 1,
+  "initialSelectAllEnergy": 0
 }

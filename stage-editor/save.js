@@ -2,7 +2,6 @@ import { validateStage } from "../packages/stage-schema/index.js";
 import { ITEM_TYPES } from "../packages/stage-schema/constants.js";
 import { boardData } from "./edit.js";
 import { getInitialSelectAllPotions, getInitialSkillPotions } from "./editor-state.js";
-import { traceLaserPath } from "./laser-path.js";
 import { updateStageMetadata } from "./stage-title.js";
 
 const saveButton = document.querySelector("#save-btn");
@@ -12,9 +11,6 @@ const STAGE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,63}$/;
 
 function makeStage(id, name, number, hint) {
     const entities = boardData.entities;
-    const doors = entities.filter((item) => item.type === "door");
-    if (doors.length > 1) throw new Error("ドアは1つまでしか保存できません。");
-
     const stage = {
         schemaVersion: 1,
         id,
@@ -46,24 +42,23 @@ function makeStage(id, name, number, hint) {
             .map(({ x, y, color }) => ({ x, y, color: color ?? SWITCH_COLOR })),
         colorWalls: entities
             .filter((item) => item.type === "colorWall")
-            .map(({ x, y, color }) => ({ x, y, width: 1, height: 1, color: color ?? "#ff5e68" })),
+            .map(({ x, y, color, mode }) => ({ x, y, width: 1, height: 1, color: color ?? "#ff5e68", mode: mode ?? "open" })),
         lasers: entities
             .filter((item) => item.type === "laser")
-            .map(({ x, y, direction }) => {
-                const laserDirection = direction ?? (x === boardData.columns - 2 ? "left" : "right");
-                const trace = traceLaserPath(boardData, { x, y, direction: laserDirection });
-                return { x, y, direction: laserDirection, length: trace.length };
-            }),
+            .map(({ x, y, direction }) => ({
+                x,
+                y,
+                direction: direction ?? (x === boardData.columns - 2 ? "left" : "right"),
+            })),
         water: entities
             .filter((item) => item.type === "water")
             .map(({ x, y }) => ({ x, y })),
         goal: { ...boardData.goal },
-        shortcutGate: doors.length ? { x: doors[0].x, y: doors[0].y } : null,
         hint,
     };
 
-    stage.initialSkillPotions = getInitialSkillPotions();
-    stage.initialSelectAllPotions = getInitialSelectAllPotions();
+    stage.initialPasteEnergy = getInitialSkillPotions();
+    stage.initialSelectAllEnergy = getInitialSelectAllPotions();
     return stage;
 }
 

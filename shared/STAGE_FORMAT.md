@@ -13,17 +13,16 @@ AIがステージやローダーを実装する時の唯一の正規仕様です
 ```json
 {
   "schemaVersion": 1,
-  "id": "copy-gate-intro",
+  "id": "copy-crate-intro",
   "number": 1,
-  "name": "コピーゲート入門",
+  "name": "コピー箱入門",
   "start": { "x": 2, "y": 13, "facing": "right" },
   "obstacles": [{ "x": 5, "y": 5, "width": 1, "height": 4 }],
-  "items": [{ "type": "skillPotion", "x": 3, "y": 12 }],
+  "items": [{ "type": "pastePotion", "x": 3, "y": 12 }, { "type": "selectAllPotion", "x": 4, "y": 12 }],
   "blocks": [{ "id": "intro-crate", "name": "木箱", "kind": "normal", "x": 3, "y": 13, "color": "#b57d50" }],
   "colorSwitches": [], "colorWalls": [], "lasers": [], "water": [],
   "goal": { "x": 21, "y": 2 },
-  "shortcutGate": { "x": 12, "y": 2 },
-  "hint": "スタート横の箱に向いてCtrl+C。ゲートが開きます"
+  "hint": "スタート横の箱に向いてCtrl+C。箱をコピーしよう"
 }
 ```
 
@@ -36,21 +35,20 @@ AIがステージやローダーを実装する時の唯一の正規仕様です
 | `name` | 1〜40文字 | HUD表示名 |
 | `start` | `{x,y,facing}`、facingは上下左右 | 開始位置と初期の向き |
 | `obstacles` | `{x,y,width,height}` の配列 | 固定壁 |
-| `items` | `skillPotion` / `pastePotion` / `selectAllPotion` の配列 | 接触取得ポーション。`skillPotion` は既存ステージ用、`pastePotion` / `selectAllPotion` はエディタ保存用（ゲーム内効果は未実装） |
+| `items` | `pastePotion` / `selectAllPotion` の配列 | 接触取得ポーション |
 | `blocks` | `id,name,kind,x,y,color` の配列 | コピー・切り取り・貼り付け対象 |
 | `colorSwitches` | `{x,y,color}` の配列 | 色つき木箱を置く台 |
-| `colorWalls` | `{x,y,width,height,color}` の配列 | 色連動の通行不能壁 |
-| `lasers` | `{x,y,direction,length}` の配列 | 発射装置 |
+| `colorWalls` | `{x,y,width,height,color,mode?}` の配列 | `mode: "open"`（省略時）は同色スイッチで開く。`"close"` は同色スイッチで閉じる |
+| `lasers` | `{x,y,direction}` の配列 | 発射装置 |
 | `water` | `{x,y}` の配列 | 通行できない水マス。通常木箱を置くと渡れる足場になる |
 | `goal` | `{x,y}` | プレイヤーのゴール |
-| `shortcutGate` | `{x,y}` または `null` | コピー成功後に開く壁 |
 | `hint` | 文字列（70文字以下推奨） | 下部ヒント |
 
-`initialSkillPotions` は任意の0以上の整数（ペーストポーションの初期個数）。`initialSelectAllPotions` は任意の0以上の整数（全選択ポーションの初期個数）。`kind` は `normal` または `colored`、色は必ず `#rrggbb`。
+`initialPasteEnergy`（省略時1）と `initialSelectAllEnergy`（省略時0）は任意の0以上の整数。各ポーション取得で対応する残り回数が1増える。`kind` は `normal` または `colored`、色は必ず `#rrggbb`。
 
 ## 検証ルール
 
 - 未知のフィールド、必須フィールド欠落、範囲外、重複座標はエラー。
-- start/goal/壁/アイテム/スイッチ/色壁/レーザー/水場/ゲートは重ねない。通常木箱は水マスに置いて橋にできる。
-- レーザーのdirectionは `up/down/left/right`、lengthは1〜21で範囲外へ出ない。
+- start/goal/壁/アイテム/スイッチ/色壁/レーザー/水場は重ねない。通常木箱は水マスに置いて橋にできる。
+- レーザーは発射装置の向きに壁・障害物・木箱で遮られるまで伸びる。安全上限は21マス。JSONで長さを指定しない。ノーマル・色つき木箱のどちらも遮る。
 - JSONは64KB以下。作成後は必ず `npm run validate:stages`。

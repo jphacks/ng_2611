@@ -44,7 +44,7 @@ function stageToBoard(stage) {
     for (const colorWall of stage.colorWalls) {
         for (let y = colorWall.y; y < colorWall.y + colorWall.height; y += 1) {
             for (let x = colorWall.x; x < colorWall.x + colorWall.width; x += 1) {
-                entities.push({ type: "colorWall", x, y, color: colorWall.color });
+                entities.push({ type: "colorWall", x, y, color: colorWall.color, mode: colorWall.mode ?? "open" });
             }
         }
     }
@@ -55,7 +55,6 @@ function stageToBoard(stage) {
             x: laser.x,
             y: laser.y,
             direction: laser.direction,
-            length: laser.length,
         });
     }
 
@@ -63,9 +62,6 @@ function stageToBoard(stage) {
         entities.push({ type: "water", x: tile.x, y: tile.y });
     }
 
-    if (stage.shortcutGate) {
-        entities.push({ type: "door", x: stage.shortcutGate.x, y: stage.shortcutGate.y });
-    }
 
     return {
         columns: 24,
@@ -78,8 +74,8 @@ function stageToBoard(stage) {
             number: stage.number,
             name: stage.name,
             hint: stage.hint,
-            initialSkillPotions: stage.initialSkillPotions,
-            initialSelectAllPotions: stage.initialSelectAllPotions,
+            initialSkillPotions: stage.initialPasteEnergy ?? stage.initialSkillPotions,
+            initialSelectAllPotions: stage.initialSelectAllEnergy ?? stage.initialSelectAllPotions,
         },
     };
 }

@@ -78,9 +78,14 @@
   ],
   "items": [
     {
-      "type": "skillPotion",
+      "type": "pastePotion",
       "x": 3,
       "y": 10
+    },
+    {
+      "type": "selectAllPotion",
+      "x": 3,
+      "y": 6
     }
   ],
   "blocks": [
@@ -101,6 +106,7 @@
     "x": 21,
     "y": 8
   },
-  "shortcutGate": null,
-  "hint": ""
+  "hint": "",
+  "initialPasteEnergy": 1,
+  "initialSelectAllEnergy": 0
 }

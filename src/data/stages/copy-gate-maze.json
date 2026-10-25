@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "copy-gate-maze",
   "number": 2,
-  "name": "コピーゲートの迷路",
+  "name": "コピー箱の迷路",
   "start": {
     "x": 2,
     "y": 13,
@@ -90,7 +90,7 @@
   ],
   "items": [
     {
-      "type": "skillPotion",
+      "type": "pastePotion",
       "x": 3,
       "y": 12
     }
@@ -113,9 +113,7 @@
     "x": 21,
     "y": 2
   },
-  "shortcutGate": {
-    "x": 12,
-    "y": 2
-  },
-  "hint": "スタート横の箱に向いてCtrl+C。複製ゲートが開き、迷路を短縮できます"
+  "hint": "スタート横の箱に向いてCtrl+Cでコピー。箱の使い方を考えて迷路を進もう",
+  "initialPasteEnergy": 1,
+  "initialSelectAllEnergy": 0
 }
