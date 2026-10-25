@@ -76,7 +76,7 @@ function readStageMeta() {
 let currentUser = null;
 let progress = createEmptyProgress();
 let services = { auth: null, save: null };
-let bootPromise = Promise.resolve();
+let guestSelectionVersion = 0;
 
 let scene = null;
 let gameLoop = null;
@@ -402,6 +402,7 @@ function renderHome(extra = {}) {
 }
 
 async function boot() {
+  const initialGuestSelectionVersion = guestSelectionVersion;
   // Paint the home screen immediately. A slow auth/session lookup should not
   // cover the public landing page with a blocking boot overlay.
   renderHome({ loading: false });
@@ -414,33 +415,50 @@ async function boot() {
 
   const configured = Boolean(auth?.isAuthConfigured?.());
   let restoredRoom = null;
+  let restoredUser = null;
+  let restoredProgress = createEmptyProgress();
+  let restoreError = null;
 
   try {
-    currentUser = auth ? await auth.getCurrentUser() : null;
+    restoredUser = auth ? await auth.getCurrentUser() : null;
 
-    if (currentUser && save) {
-      if (currentUser.type === 'user') {
-        progress = await save.claimGuestSave(currentUser);
+    if (restoredUser && save) {
+      if (restoredUser.type === 'user') {
+        restoredProgress = await save.claimGuestSave(restoredUser);
       } else {
-        progress = await save.loadSave(currentUser);
+        restoredProgress = await save.loadSave(restoredUser);
       }
-    } else {
-      progress = createEmptyProgress();
     }
 
-    if (currentUser?.type === 'user') {
+    if (restoredUser?.type === 'user') {
       try {
         restoredRoom = await getCurrentRoom();
-        activeRoomCode = restoredRoom?.room_code ?? null;
       } catch (roomError) {
         console.warn('[boot] active room could not be restored', roomError);
       }
     }
   } catch (error) {
     console.error('[boot]', error);
-    currentUser = null;
-    progress = createEmptyProgress();
-    home.setMessage('進捗を読み込めませんでした。ゲストで遊べます。', 'error');
+    restoreError = error;
+  }
+
+  const guestWasSelectedDuringBoot = guestSelectionVersion !== initialGuestSelectionVersion;
+  if (!guestWasSelectedDuringBoot) {
+    currentUser = restoreError ? null : restoredUser;
+    progress = restoreError ? createEmptyProgress() : restoredProgress;
+    activeRoomCode = restoredRoom?.room_code ?? null;
+    if (restoreError) home.setMessage('進捗を読み込めませんでした。ゲストで遊べます。', 'error');
+  } else if (!scene && currentUser?.type === 'guest') {
+    // ゲスト選択を優先し、利用可能になった保存機能だけ裏で接続します。
+    try {
+      await auth?.signInAsGuest?.();
+      if (save) {
+        const guestProgress = await save.loadSave(currentUser);
+        if (!scene) progress = guestProgress;
+      }
+    } catch (error) {
+      console.warn('[guest] saved progress could not be restored; continuing with a fresh game', error);
+    }
   }
 
   renderHome({
@@ -449,7 +467,11 @@ async function boot() {
     loading: false,
   });
 
-  if (restoredRoom) {
+  if (guestWasSelectedDuringBoot) {
+    playModeUi.hide();
+    renderHome({ authConfigured: configured, authReason: authReason(auth, configured), loading: false });
+    if (!scene) home.show();
+  } else if (restoredRoom) {
     home.hide();
     roomLobbyUi.open(restoredRoom.room_code, {
       currentUserId: currentUser.id,
@@ -460,43 +482,34 @@ async function boot() {
   }
 }
 
-async function handleGuest() {
-  home.setBusy(true);
-  home.setMessage('');
+function handleGuest() {
+  guestSelectionVersion += 1;
+  const selectionVersion = guestSelectionVersion;
+  currentUser = { type: 'guest', id: 'guest' };
+  progress = createEmptyProgress();
+  playModeUi.hide();
+  home.show();
+  renderHome();
+  home.setMessage('ゲストでプレイできます。「ゲーム開始」を押してください。', 'info');
+  void restoreGuestSave(selectionVersion);
+}
+
+async function restoreGuestSave(selectionVersion) {
+  try {
+    await services.auth?.signInAsGuest?.();
+  } catch (error) {
+    console.warn('[guest] using a temporary guest session', error);
+  }
 
   try {
-    // 起動時のセッション復元がゲスト選択を後から上書きしないよう待ちます。
-    await bootPromise;
-
-    // 保存機能が利用できない環境でも、今回のプレイはゲストとして開始できます。
-    currentUser = { type: 'guest', id: 'guest' };
-    progress = createEmptyProgress();
-
-    if (services.auth?.signInAsGuest) {
-      try {
-        currentUser = await services.auth.signInAsGuest();
-      } catch (error) {
-        console.warn('[guest] persistent guest session is unavailable; using a temporary session', error);
-      }
-    }
-
-    if (services.save) {
-      try {
-        progress = await services.save.loadSave(currentUser);
-      } catch (error) {
-        console.warn('[guest] saved progress could not be loaded; starting fresh', error);
-      }
-    }
-
-    playModeUi.hide();
-    home.show();
+    if (!services.save) return;
+    const guestProgress = await services.save.loadSave({ type: 'guest', id: 'guest' });
+    if (selectionVersion !== guestSelectionVersion || scene) return;
+    progress = guestProgress;
     renderHome();
-    home.setMessage('ゲストセッションを開始しました。', 'info');
+    home.setMessage('ゲストでプレイできます。「ゲーム開始」を押してください。', 'info');
   } catch (error) {
-    console.error('[guest]', error);
-    home.setMessage('ゲストを開始できませんでした。もう一度お試しください。', 'error');
-  } finally {
-    home.setBusy(false);
+    console.warn('[guest] saved progress could not be restored; continuing with a fresh game', error);
   }
 }
 
@@ -852,7 +865,7 @@ window.addEventListener('pagehide', () => {
   if (scene) stopGame({ showHome: false });
 });
 
-bootPromise = boot().catch((error) => {
+boot().catch((error) => {
   console.error('[boot]', error);
   home.setLoading(false);
   home.setMessage('起動に失敗しました。ページを再読み込みしてください。', 'error');
