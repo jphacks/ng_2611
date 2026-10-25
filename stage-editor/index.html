@@ -24,7 +24,7 @@
         <button class="btn" id="new-btn">新規作成</button>
         <button class="btn" id="save-btn" type="button">保存</button>
         <input id="stage-json-input" class="visually-hidden-file-input" type="file" accept=".json,application/json">
-        <button class="btn load-file-button" id="load-btn" type="button" disabled title="読み込み機能は現在使用できません">読み込み<span class="btn-unavailable-mark">使用不可</span></button>
+        <button class="btn load-file-button" id="load-btn" type="button">読み込み・管理</button>
         <button class="btn" id="name-change-btn">名前変更</button>
       </div>
     </div>
@@ -34,7 +34,66 @@
       <p>ここに使い方の説明が表示されます。</p>
     </div>
   </header>
-  
+
+  <p id="save-status" class="save-status" role="status" aria-live="polite"></p>
+
+  <dialog id="save-dialog" aria-labelledby="save-dialog-title" aria-describedby="save-dialog-note">
+    <form id="save-form" novalidate>
+      <h2 id="save-dialog-title">ステージを保存</h2>
+      <p id="save-dialog-note" class="save-dialog-note">
+        開発サーバーで使っている場合は <code>src/data/stages/</code> に直接保存します。それ以外では保存先を選ぶかダウンロードします。ゲームへは <code>npm run build</code> で反映されます。
+      </p>
+
+      <label class="save-field" for="save-id">
+        <span>ステージID</span>
+        <input id="save-id" name="id" type="text" inputmode="latin" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="64" placeholder="example-stage">
+        <small>英小文字・数字・ハイフン。ファイル名にもなります。</small>
+      </label>
+      <p id="save-existing" class="save-notice" role="status" hidden></p>
+
+      <div class="save-field-row">
+        <label class="save-field" for="save-number">
+          <span>ステージ番号</span>
+          <input id="save-number" name="number" type="number" min="1" step="1" placeholder="1">
+        </label>
+        <label class="save-field" for="save-name">
+          <span>ステージ名</span>
+          <input id="save-name" name="name" type="text" maxlength="40" autocomplete="off">
+        </label>
+      </div>
+
+      <label class="save-field" for="save-hint">
+        <span>ヒント（任意）</span>
+        <textarea id="save-hint" name="hint" rows="2"></textarea>
+      </label>
+
+      <p id="save-error" class="save-error" role="alert" hidden></p>
+
+      <div class="save-dialog-actions">
+        <button class="btn" id="save-cancel" type="button">キャンセル</button>
+        <button class="btn save-submit" id="save-submit" type="submit">JSONを保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="stage-manager-dialog" aria-labelledby="stage-manager-title">
+    <section class="stage-manager">
+      <div class="stage-manager-header">
+        <div>
+          <h2 id="stage-manager-title">作成済みステージ</h2>
+          <p>選ぶと編集できます。削除は確認後にプロジェクトから取り除きます。</p>
+        </div>
+        <button class="btn" id="stage-manager-close" type="button">閉じる</button>
+      </div>
+      <p id="stage-manager-status" class="save-error" role="alert" hidden></p>
+      <div id="stage-manager-list" class="stage-manager-list" aria-live="polite"></div>
+      <div class="stage-manager-actions">
+        <button class="btn" id="open-file-btn" type="button">JSONファイルを選んで開く</button>
+        <button class="btn" id="stage-manager-refresh" type="button">一覧を更新</button>
+      </div>
+    </section>
+  </dialog>
+
   <div id="toolbox">
     <button class="btn-selected" id="wall-btn" type="button">壁</button>
     <button class="btn-selected" id="box-btn" type="button">木箱類</button>

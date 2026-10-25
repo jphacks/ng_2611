@@ -4,6 +4,13 @@ import { refreshStageNameDisplay } from "./stage-title.js";
 
 const stageFileInput = document.querySelector("#stage-json-input");
 const loadButton = document.querySelector("#load-btn");
+const stageManagerDialog = document.querySelector("#stage-manager-dialog");
+const stageManagerList = document.querySelector("#stage-manager-list");
+const stageManagerStatus = document.querySelector("#stage-manager-status");
+const stageManagerClose = document.querySelector("#stage-manager-close");
+const stageManagerRefresh = document.querySelector("#stage-manager-refresh");
+const openFileButton = document.querySelector("#open-file-btn");
+const LIST_ENDPOINT = "/__stage-editor/stages";
 
 function stageToBoard(stage) {
     const entities = [];
@@ -126,7 +133,114 @@ async function loadStageFile(file, sourceHandle = null) {
     }
 }
 
-loadButton?.addEventListener("click", async () => {
+function setManagerStatus(message = "") {
+    if (!stageManagerStatus) return;
+    stageManagerStatus.textContent = message;
+    stageManagerStatus.hidden = !message;
+}
+
+function closeStageManager() {
+    if (!stageManagerDialog) return;
+    if (typeof stageManagerDialog.close === "function" && stageManagerDialog.open) {
+        stageManagerDialog.close();
+    } else {
+        stageManagerDialog.removeAttribute("open");
+    }
+}
+
+function stageUrl(id) {
+    return `${LIST_ENDPOINT}/${encodeURIComponent(id)}`;
+}
+
+async function loadProjectStage(id) {
+    const response = await fetch(stageUrl(id), { headers: { Accept: "application/json" } });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.stage) throw new Error(data?.error ?? "ステージを読み込めませんでした。");
+
+    const file = new File([JSON.stringify(data.stage)], `${id}.json`, { type: "application/json" });
+    await loadStageFile(file);
+    closeStageManager();
+}
+
+async function deleteProjectStage(stage) {
+    const label = `ステージ${stage.number}: ${stage.name}（${stage.id}）`;
+    if (!window.confirm(`${label} を削除します。\n\nこの操作は src/data/stages/${stage.id}.json を削除します。Gitで管理している場合は履歴から復元できます。`)) return;
+
+    const response = await fetch(stageUrl(stage.id), { method: "DELETE", headers: { Accept: "application/json" } });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.ok) throw new Error(data?.error ?? "削除できませんでした。");
+    await renderProjectStages();
+    const status = document.querySelector("#tool-status");
+    if (status) status.textContent = `削除しました: ${stage.name}`;
+}
+
+function makeStageRow(stage) {
+    const row = document.createElement("article");
+    row.className = "stage-manager-row";
+    const details = document.createElement("div");
+    details.className = "stage-manager-row-main";
+    const title = document.createElement("strong");
+    title.textContent = `ステージ${stage.number}: ${stage.name}`;
+    const id = document.createElement("span");
+    id.textContent = stage.id;
+    details.append(title, id);
+
+    const actions = document.createElement("div");
+    actions.className = "stage-manager-row-actions";
+    const edit = document.createElement("button");
+    edit.className = "btn";
+    edit.type = "button";
+    edit.textContent = "編集";
+    edit.addEventListener("click", () => loadProjectStage(stage.id).catch((error) => setManagerStatus(error.message)));
+    const remove = document.createElement("button");
+    remove.className = "btn stage-delete-button";
+    remove.type = "button";
+    remove.textContent = "削除";
+    remove.addEventListener("click", () => deleteProjectStage(stage).catch((error) => setManagerStatus(error.message)));
+    actions.append(edit, remove);
+    row.append(details, actions);
+    return row;
+}
+
+async function renderProjectStages() {
+    if (!stageManagerList) return;
+    setManagerStatus("");
+    stageManagerList.replaceChildren();
+    const loading = document.createElement("p");
+    loading.textContent = "ステージ一覧を読み込み中…";
+    stageManagerList.append(loading);
+    try {
+        const response = await fetch(LIST_ENDPOINT, { headers: { Accept: "application/json" } });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !Array.isArray(data?.stages)) throw new Error("開発サーバーから一覧を取得できませんでした。JSONファイルを選んで開くことはできます。");
+        stageManagerList.replaceChildren();
+        if (data.stages.length === 0) {
+            const empty = document.createElement("p");
+            empty.textContent = "保存済みステージはありません。";
+            stageManagerList.append(empty);
+            return;
+        }
+        data.stages.forEach((stage) => stageManagerList.append(makeStageRow(stage)));
+    } catch (error) {
+        stageManagerList.replaceChildren();
+        setManagerStatus(error.message);
+    }
+}
+
+async function openStageManager() {
+    if (!stageManagerDialog) {
+        stageFileInput?.click();
+        return;
+    }
+    if (typeof stageManagerDialog.showModal === "function") {
+        if (!stageManagerDialog.open) stageManagerDialog.showModal();
+    } else {
+        stageManagerDialog.setAttribute("open", "");
+    }
+    await renderProjectStages();
+}
+
+async function openStageFilePicker() {
     if (typeof window.showOpenFilePicker !== "function" || !window.isSecureContext) {
         stageFileInput?.click();
         return;
@@ -148,7 +262,12 @@ loadButton?.addEventListener("click", async () => {
             window.alert("JSONファイルを開けませんでした。\n" + error.message);
         }
     }
-});
+}
+
+loadButton?.addEventListener("click", openStageManager);
+openFileButton?.addEventListener("click", openStageFilePicker);
+stageManagerClose?.addEventListener("click", closeStageManager);
+stageManagerRefresh?.addEventListener("click", () => renderProjectStages());
 
 stageFileInput?.addEventListener("change", async () => {
     const file = stageFileInput.files?.[0];
