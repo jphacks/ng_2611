@@ -2,6 +2,7 @@
  * ホーム画面のDOMだけを扱います。
  * 認証・保存・ゲームの呼び出しは `src/main.js` が担当し、ここではコールバックを呼ぶだけです。
  */
+import { audio } from '../core/AudioManager.js';
 
 const STAGE_TOTAL_FALLBACK = 5;
 
@@ -238,6 +239,7 @@ export function setupHome({
   const helpButton = byId('help-button');
   const helpDialog = byId('help-dialog');
   const helpCloseButton = byId('help-close-button');
+  const bgmToggleButton = byId('bgm-toggle-button');
 
   if (!shell || !googleButton || !guestButton || !startButton) {
     throw new Error('ホーム画面の要素が見つかりません。');
@@ -420,6 +422,23 @@ export function setupHome({
     selectionStatus.textContent = 'プレイ方法を選択してください。';
   }
 
+  function renderAudioToggle() {
+    if (!bgmToggleButton) return;
+
+    const enabled = audio.isBgmEnabled();
+    bgmToggleButton.setAttribute('aria-pressed', String(enabled));
+    bgmToggleButton.dataset.state = enabled ? 'on' : 'off';
+
+    const stateLabel = bgmToggleButton.querySelector('.audio-toggle-state');
+    if (stateLabel) stateLabel.textContent = enabled ? 'ON' : 'OFF';
+
+    bgmToggleButton.setAttribute(
+      'aria-label',
+      `BGM（音楽）は${enabled ? 'オン' : 'オフ'}。押すと${enabled ? 'オフ' : 'オン'}にします`,
+    );
+    bgmToggleButton.title = enabled ? 'BGM をオフにする' : 'BGM をオンにする';
+  }
+
   function paint() {
     if (loadingOverlay) loadingOverlay.hidden = !state.loading;
     if (message) message.setAttribute('data-tone', state.messageTone);
@@ -429,6 +448,7 @@ export function setupHome({
     renderGuest();
     renderStatus();
     renderProgress();
+    renderAudioToggle();
   }
 
   function render(next = {}) {
@@ -506,6 +526,11 @@ export function setupHome({
 
   helpButton?.addEventListener('click', openHelp);
   helpCloseButton?.addEventListener('click', closeHelp);
+
+  bgmToggleButton?.addEventListener('click', () => {
+    audio.toggleBgm();
+    renderAudioToggle();
+  });
 
   helpDialog?.addEventListener('click', (event) => {
     if (event.target === helpDialog) closeHelp();

@@ -1,3 +1,4 @@
+import { audio } from '../core/AudioManager.js';
 import InputHandler from '../core/InputHandler.js';
 import StageManager from '../core/StageManager.js';
 import STAGES from '../data/stages.js';
@@ -85,6 +86,7 @@ export default class MainGameScene {
     this.runCleared = false;
     this.gameOverReason = '';
     this.canvas.addEventListener('click', this.focusCanvas);
+    audio.startBgm();
   }
 
   handleRetryKeyDown = (event) => {
@@ -118,12 +120,14 @@ export default class MainGameScene {
     const nextY = tile.y + offset.y;
     if (!this.canOccupy(nextX, nextY)) {
       this.lastShortcutMessage = 'そのマスには進めません';
+      audio.playSe('error');
       return;
     }
 
     this.recordUndo();
     this.player.x = (nextX + 0.5) * this.tileSize;
     this.player.y = (nextY + 0.5) * this.tileSize;
+    audio.playSe('move');
     this.collectNearbyItems();
     if (this.applyHazards(nextX, nextY)) return;
     this.checkGoal();
@@ -150,6 +154,7 @@ export default class MainGameScene {
     this.gameOver = true;
     this.gameOverReason = reason;
     this.lastShortcutMessage = `${reason} R / Enter でこのステージに再挑戦`;
+    audio.playSe('error');
     this.input.setEnabled(false);
     window.addEventListener('keydown', this.handleRetryKeyDown);
   }
@@ -179,6 +184,8 @@ export default class MainGameScene {
       this.lastShortcutMessage = selectableBlocks.length > 0
         ? `操作可能な木箱を${selectableBlocks.length}個選択しました`
         : '選択できる木箱がありません';
+      if (selectableBlocks.length > 0) this.playShortcutSound(action);
+      else audio.playSe('error');
       return;
     }
 
@@ -191,15 +198,18 @@ export default class MainGameScene {
       const hasSelection = selectedBlocks.length > 0;
       if (hasSelection && !selectedBlocks.some((selected) => selected.id === block?.id)) {
         this.lastShortcutMessage = `${modifierLabel}+${action === 'copy' ? 'C' : 'X'}: 前方カーソルを選択中の木箱に合わせてください`;
+        audio.playSe('error');
         return;
       }
       const operationBlocks = hasSelection ? selectedBlocks : (block ? [block] : []);
       if (operationBlocks.length === 0) {
         this.lastShortcutMessage = `${modifierLabel}+${action === 'copy' ? 'C' : 'X'}: 前方に操作可能なブロックがありません`;
+        audio.playSe('error');
         return;
       }
       if (operationBlocks.some((candidate) => candidate.waterFilled)) {
         this.lastShortcutMessage = '水に置いた木箱は動かせません';
+        audio.playSe('error');
         return;
       }
 
@@ -231,6 +241,7 @@ export default class MainGameScene {
       this.lastShortcutMessage = action === 'copy'
         ? `${countLabel}をコピーしました${this.shortcutGateOpen ? '。裏道ゲートが開きました' : ''}`
         : `${countLabel}を切り取りました`;
+      this.playShortcutSound(action);
       return;
     }
 
@@ -238,10 +249,12 @@ export default class MainGameScene {
       const clipboard = this.cloneClipboard(this.clipboard);
       if (!clipboard || clipboard.blocks.length === 0) {
         this.lastShortcutMessage = 'クリップボードにブロックがありません';
+        audio.playSe('error');
         return;
       }
       if (this.player.skillEnergy <= 0) {
         this.lastShortcutMessage = 'スキルエナジーが不足しています。青いポーションを集めよう';
+        audio.playSe('error');
         return;
       }
 
@@ -263,23 +276,28 @@ export default class MainGameScene {
         const key = `${placement.x},${placement.y}`;
         if (this.isWallTile(placement.x, placement.y)) {
           this.lastShortcutMessage = '貼り付け先に壁ブロックが重なるため、貼り付けできません';
+          audio.playSe('error');
           return;
         }
         if (!this.isInsideBoard(placement.x, placement.y) || this.isFixedObstacle(placement.x, placement.y)) {
           this.lastShortcutMessage = '貼り付ける範囲に通れない障害物があるため、貼り付けできません';
+          audio.playSe('error');
           return;
         }
         if (occupied.has(key) || this.blocks.some((candidate) => candidate.x === placement.x && candidate.y === placement.y)) {
           this.lastShortcutMessage = '貼り付ける範囲に別の木箱があるため、貼り付けできません';
+          audio.playSe('error');
           return;
         }
         const playerTile = this.getPlayerTile();
         if (placement.x === playerTile.x && placement.y === playerTile.y) {
           this.lastShortcutMessage = 'プレイヤーのいるマスには貼り付けできません';
+          audio.playSe('error');
           return;
         }
         if (this.isWaterTile(placement.x, placement.y) && placement.entry.kind !== 'normal') {
           this.lastShortcutMessage = '水場にはノーマル木箱だけ置けます';
+          audio.playSe('error');
           return;
         }
         occupied.add(key);
@@ -328,10 +346,25 @@ export default class MainGameScene {
           ? `${placements[0].entry.name}を前方に配置しました`
           : `${placedCount}個の木箱を前方に配置しました`;
       }
+      this.playShortcutSound('paste');
       return;
     }
 
+    audio.playSe('error');
     this.lastShortcutMessage = `${modifierLabel}+${action.toUpperCase()} はブロック操作ではありません`;
+  }
+
+  playShortcutSound(action) {
+    const sounds = {
+      copy: 'ctrlC',
+      cut: 'ctrlX',
+      paste: 'ctrlV',
+      undo: 'ctrlZ',
+      redo: 'ctrlY',
+      selectAll: 'ctrlA',
+    };
+    const sound = sounds[action];
+    if (sound) audio.playSe(sound);
   }
 
   getSelectableBlocks() {
@@ -514,23 +547,27 @@ export default class MainGameScene {
   undo() {
     if (this.undoStack.length === 0) {
       this.lastShortcutMessage = '取り消せる操作がありません';
+      audio.playSe('error');
       return;
     }
     this.redoStack.push(this.captureState());
     this.restoreState(this.undoStack.pop());
     this.openColors = this.computeOpenColors();
     this.lastShortcutMessage = '直前の操作を取り消しました';
+    this.playShortcutSound('undo');
   }
 
   redo() {
     if (this.redoStack.length === 0) {
       this.lastShortcutMessage = 'やり直せる操作がありません';
+      audio.playSe('error');
       return;
     }
     this.undoStack.push(this.captureState());
     this.restoreState(this.redoStack.pop());
     this.openColors = this.computeOpenColors();
     this.lastShortcutMessage = '操作をやり直しました';
+    this.playShortcutSound('redo');
   }
 
   computeOpenColors() {
@@ -1613,6 +1650,7 @@ export default class MainGameScene {
     window.removeEventListener('keydown', this.handleRetryKeyDown);
     this.input.detach();
     this.canvas.removeEventListener('click', this.focusCanvas);
+    audio.stopBgm();
   }
 }
 
