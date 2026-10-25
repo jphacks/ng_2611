@@ -119,10 +119,11 @@ export function setupRoomLobbyUi({ onClose, onStart } = {}) {
     if (startKey && room.stage_id && handledStartAt !== startKey) {
       handledStartAt = startKey;
       if (room.host_user_id === userId) {
-        startStatus.textContent = '開始を参加者へ通知しました。ホストは待機画面に残ります。';
+        startStatus.textContent = '開始を参加者へ通知しました。ホスト画面を開いています…';
+        onStart?.({ roomCode, stageId: room.stage_id, isHost: true });
       } else {
         startStatus.textContent = 'ホストが開始しました。ゲームを開いています…';
-        onStart?.({ roomCode, stageId: room.stage_id });
+        onStart?.({ roomCode, stageId: room.stage_id, isHost: false });
       }
     }
 
