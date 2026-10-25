@@ -106,6 +106,7 @@ export default class MainGameScene {
     this.gameOver = false;
     this.runCleared = false;
     this.gameOverReason = '';
+    window.addEventListener('keydown', this.handleRetryKeyDown);
     this.canvas.addEventListener('click', this.focusCanvas);
     audio.startBgm();
   }
@@ -119,8 +120,7 @@ export default class MainGameScene {
   }
 
   handleRetryKeyDown = (event) => {
-    if (!this.gameOver && !this.runCleared) return;
-    const key = event.key.toLowerCase();
+    const key = String(event.key ?? '').toLowerCase();
     const modifier = event.ctrlKey || event.metaKey;
     if (this.gameOver && modifier && key === 'z') {
       event.preventDefault();
@@ -128,7 +128,8 @@ export default class MainGameScene {
       this.rewindAfterDeath();
       return;
     }
-    if (this.paused) return;
+    if (this.paused || (this.roomMode && this.runCleared)) return;
+    if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
     if (key !== 'enter' && key !== 'r') return;
     event.preventDefault();
     event.stopPropagation();
@@ -141,7 +142,6 @@ export default class MainGameScene {
       this.lastShortcutMessage = '戻せる操作がありません。R / Enter で再挑戦';
       return;
     }
-    window.removeEventListener('keydown', this.handleRetryKeyDown);
     this.gameOver = false;
     this.gameOverReason = '';
     this.undo();
@@ -207,14 +207,12 @@ export default class MainGameScene {
     this.gameOver = true;
     this.input.setEnabled(false);
     this.gameOverReason = reason;
-    this.lastShortcutMessage = `${reason} Ctrl/Cmd+Zで一手戻す / Rで再挑戦`;
+    this.lastShortcutMessage = `${reason} Ctrl/Cmd+Zで一手戻す / R / Enterで再挑戦`;
     this.onGameOver?.({ reason, stageId: this.stage.id });
     audio.playSe('error');
-    window.addEventListener('keydown', this.handleRetryKeyDown);
   }
 
   retryStage() {
-    window.removeEventListener('keydown', this.handleRetryKeyDown);
     this.gameOver = false;
     this.gameOverReason = '';
     this.loadStage(this.stage);
@@ -709,11 +707,9 @@ export default class MainGameScene {
       ? '選択ステージをすべてクリア！待機画面に戻ります…'
       : '全ステージクリア！ R / Enter で最初から';
     this.input.setEnabled(false);
-    if (!this.roomMode) window.addEventListener('keydown', this.handleRetryKeyDown);
   }
 
   resetRun() {
-    window.removeEventListener('keydown', this.handleRetryKeyDown);
     this.stage = this.stageManager.reset();
     this.loadStage(this.stage);
     this.lastShortcutMessage = 'ダンジョンに再挑戦！青いポーションを回収しよう';
